@@ -72,10 +72,6 @@ sudo apt install -y lynx
 #### Python依赖
 
 ~~~
-# 创建虚拟环境（推荐）
-python3 -m venv printtheshot-env
-source printtheshot-env/bin/activate
-
 # 安装Python包
 pip install matplotlib pillow numpy
 ~~~
@@ -83,10 +79,11 @@ pip install matplotlib pillow numpy
 #### 下载和运行
 
 ~~~
-# 下载服务器脚本
-wget https://raw.githubusercontent.com/yourusername/printtheshot/main/print_the_shot_server.py
+# 克隆代码库
+git clone https://github.com/yourusername/printtheshot.git
+cd printtheshot
 
-# 设为可执行
+# 设置服务器脚本为可执行
 chmod +x print_the_shot_server.py
 
 # 运行服务器
