@@ -192,10 +192,9 @@ sudo lynx http://localhost:631
 
 ~~~
 print_the_shot_server.py     # 主服务器脚本
-plugin.tcl                   # DE1插件文件
+plugin/plugin.tcl            # DE1插件文件
 shots_data/                  # JSON冲泡数据存储
 shots_images/                # 生成的图表图片
-plugin/                      # 插件下载目录
 ~~~
 
 ## 配置选项
