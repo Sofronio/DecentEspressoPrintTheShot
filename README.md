@@ -13,6 +13,39 @@ A complete solution for automatically uploading DECENT espresso machine shot dat
 - **Multilingual**: Supports both English and Chinese
 - **DE1 Plugin**: Seamless integration with DECENT espresso machines
 
+## Screenshots
+
+### 🖥️ Server Operation
+![Server Terminal](screenshots/server-terminal.jpg)
+- **Server startup interface** - Displaying port, data directories, and startup status
+- **Real-time logging** - Monitoring data reception and print jobs
+- **Multilingual support** - Bilingual server status information
+- **Active connections** - Current user sessions and system resources
+
+### 🌐 Web Management
+![Web Interface](screenshots/web-interface.jpg)
+- **Dashboard overview** - Server status and statistics at a glance
+- **Data visualization** - Interactive shot charts with pressure/flow/temperature curves
+- **Queue management** - Real-time print queue monitoring and control
+- **Language switching** - Easy toggle between English and Chinese interfaces
+- **Manual controls** - Upload, print, and queue management functions
+
+### ☕️ DE1 Integration
+![DE1 Plugin](screenshots/de1-plugin.jpg)
+- **Plugin configuration** - Server URL, endpoints, and upload settings
+- **Language selection** - Bilingual interface with clear toggle buttons
+- **Manual upload** - Instant upload of last shot data
+- **Status display** - Last upload results with timestamps
+- **Auto-upload settings** - Minimum duration and upload preferences
+
+### 🖨️ Printed Output
+![Printed Chart](screenshots/printed-chart.jpg)
+- **Professional charts** - Pressure, flow rate, and temperature curves
+- **Extraction data** - Time, input/output weight, and shot duration
+- **Profile information** - Coffee profile name and grinder settings
+- **Thermal optimized** - Designed for 80mm receipt printers
+- **Auto-cut support** - Compatible with printers having cutter function
+
 ## Hardware Requirements
 
 - DECENT DE1/DE1PRO/DE1XL espresso machine
