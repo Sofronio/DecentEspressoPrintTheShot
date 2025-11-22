@@ -50,18 +50,21 @@ pip install matplotlib pillow numpy
 
 #### Download and Run
 
-```bash
-# Clone or download the server script
-wget https://raw.githubusercontent.com/yourusername/printtheshot/main/print_the_shot_server.py
+~~~
+# Clone the repository
+git clone https://github.com/yourusername/printtheshot.git
+cd printtheshot
 
-# Make executable
+# Make server script executable
 chmod +x print_the_shot_server.py
 
 # Run server
 ./print_the_shot_server.py
-```
+~~~
 
 The server will start on port 8000. Access the web interface at `http://your-pi-address:8000`
+
+**Important**: The `plugin.tcl` file for your DE1 machine is now available in the cloned directory.
 
 ### 2. Printer Configuration
 
