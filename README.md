@@ -45,6 +45,9 @@ A complete solution for automatically uploading DECENT espresso machine shot dat
 - **Thermal optimized** - Designed for 80mm receipt printers
 - **Auto-cut support** - Compatible with printers having cutter function
 
+### 🖨️ Printer in action
+![Printed Chart](screenshots/printer-in-action.jpg)
+
 ## Hardware Requirements
 
 - DECENT DE1/DE1PRO/DE1XL espresso machine

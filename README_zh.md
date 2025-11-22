@@ -45,6 +45,9 @@
 - **热敏优化** - 专为80mm小票打印机设计
 - **自动切纸支持** - 兼容带切纸功能的打印机
 
+### 🖨️ 工作中的打印机
+![Printed Chart](screenshots/printer-in-action.jpg)
+
 ## 硬件要求
 
 - DECENT DE1/DE1PRO/DE1XL 咖啡机
