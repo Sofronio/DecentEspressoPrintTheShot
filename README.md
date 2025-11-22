@@ -101,6 +101,92 @@ The server will start on port 8000. Access the web interface at `http://your-pi-
 
 **Important**: The `plugin.tcl` file for your DE1 machine is now available in the cloned directory.
 
+## Running as a Service
+
+### Systemd Service (Recommended for Linux/Raspberry Pi)
+
+1. **Create service file**:
+~~~
+sudo nano /etc/systemd/system/printtheshot.service
+~~~
+
+2. **Add service configuration**:
+~~~
+[Unit]
+Description=PrintTheShot Server
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/PrintTheShot
+ExecStart=/home/pi/PrintTheShot/print_the_shot_server.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+~~~
+
+3. **Enable and start service**:
+~~~
+sudo systemctl daemon-reload
+sudo systemctl enable printtheshot.service
+sudo systemctl start printtheshot.service
+~~~
+
+4. **Check service status**:
+~~~
+sudo systemctl status printtheshot.service
+~~~
+
+### Managing the Service
+
+**Start service**:
+~~~
+sudo systemctl start printtheshot.service
+~~~
+
+**Stop service**:
+~~~
+sudo systemctl stop printtheshot.service
+~~~
+
+**Restart service**:
+~~~
+sudo systemctl restart printtheshot.service
+~~~
+
+**View logs**:
+~~~
+sudo journalctl -u printtheshot.service -f
+~~~
+
+**Disable auto-start**:
+~~~
+sudo systemctl disable printtheshot.service
+~~~
+
+**Remove service completely**:
+~~~
+sudo systemctl stop printtheshot.service
+sudo systemctl disable printtheshot.service
+sudo rm /etc/systemd/system/printtheshot.service
+sudo systemctl daemon-reload
+~~~
+
+### Manual Background Process
+
+**Start in background**:
+~~~
+nohup python3 print_the_shot_server.py > server.log 2>&1 &
+~~~
+
+**Stop background process**:
+~~~
+pkill -f print_the_shot_server.py
+~~~
+
 ### 2. Printer Configuration
 
 #### GUI Method (Recommended for Desktop Systems)
@@ -238,3 +324,11 @@ For issues and questions:
 1. Check troubleshooting section above
 2. Review server logs for error messages
 3. Ensure all dependencies are properly installed
+
+## Special Thanks
+
+### Printing Inspiration & Support
+A very special thank you to **Ray from Siphon House (Beijing)** who not only inspired this entire project but also generously lent a thermal printer to help bring it to life. Her Siphon House proudly serves as the first operational café to implement PrintTheShot in production.
+
+### Technical Inspiration
+The upload functionality and UI design of the **Visualizer plugin** for DECENT espresso machines greatly inspired the plugin features in this system. Their elegant approach to data handling and user interface design provided valuable reference for developing PrintTheShot's DE1 integration.

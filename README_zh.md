@@ -95,6 +95,92 @@ chmod +x print_the_shot_server.py
 
 服务器将在8000端口启动。通过 `http://你的树莓派地址:8000` 访问网页界面
 
+## 作为服务运行
+
+### Systemd 服务（推荐用于 Linux/树莓派）
+
+1. **创建服务文件**：
+~~~
+sudo nano /etc/systemd/system/printtheshot.service
+~~~
+
+2. **添加服务配置**：
+~~~
+[Unit]
+Description=PrintTheShot Server
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/PrintTheShot
+ExecStart=/home/pi/PrintTheShot/print_the_shot_server.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+~~~
+
+3. **启用并启动服务**：
+~~~
+sudo systemctl daemon-reload
+sudo systemctl enable printtheshot.service
+sudo systemctl start printtheshot.service
+~~~
+
+4. **检查服务状态**：
+~~~
+sudo systemctl status printtheshot.service
+~~~
+
+### 服务管理
+
+**启动服务**：
+~~~
+sudo systemctl start printtheshot.service
+~~~
+
+**停止服务**：
+~~~
+sudo systemctl stop printtheshot.service
+~~~
+
+**重启服务**：
+~~~
+sudo systemctl restart printtheshot.service
+~~~
+
+**查看日志**：
+~~~
+sudo journalctl -u printtheshot.service -f
+~~~
+
+**禁用自动启动**：
+~~~
+sudo systemctl disable printtheshot.service
+~~~
+
+**完全删除服务**：
+~~~
+sudo systemctl stop printtheshot.service
+sudo systemctl disable printtheshot.service
+sudo rm /etc/systemd/system/printtheshot.service
+sudo systemctl daemon-reload
+~~~
+
+### 手动后台进程
+
+**在后台启动**：
+~~~
+nohup python3 print_the_shot_server.py > server.log 2>&1 &
+~~~
+
+**停止后台进程**：
+~~~
+pkill -f print_the_shot_server.py
+~~~
+
 ### 2. 打印机配置
 
 #### 图形界面方法（推荐桌面系统使用）
@@ -232,3 +318,11 @@ GNU通用公共许可证v3.0 - 详见LICENSE文件。
 1. 先查看上面的故障排除部分
 2. 检查服务器日志中的错误信息
 3. 确保所有依赖已正确安装
+
+## 特别感谢
+
+### 灵感与支持
+衷心感谢**来自北京Siphon House的Ray**，她不仅启发了整个项目的创意，还慷慨地借出一台热敏打印机帮助项目实现。她的Siphon House也成为第一家在生产环境中使用PrintTheShot的咖啡馆。
+
+### 技术启发
+**Visualizer插件**的上传功能和UI设计，大大启发了本系统的插件功能。他们在数据处理和用户界面设计方面的优雅方案，为开发PrintTheShot的DE1插件提供了宝贵的参考。
