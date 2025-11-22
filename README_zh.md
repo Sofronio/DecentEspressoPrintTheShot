@@ -16,14 +16,14 @@
 ## 截图展示
 
 ### 🖥️ 服务器运行
-![Server Terminal](screenshots/server-terminal.png)
+![Server Terminal](screenshots/server-terminal.jpg)
 - **服务器启动界面** - 显示端口、数据目录和启动状态
 - **实时日志** - 监控数据接收和打印任务
 - **多语言支持** - 中英文服务器状态信息
 - **活跃连接** - 当前用户会话和系统资源
 
 ### 🌐 网页管理
-![Web Interface](screenshots/web-interface.png)
+![Web Interface](screenshots/web-interface.jpg)
 - **仪表板概览** - 服务器状态和统计信息一览
 - **数据可视化** - 交互式冲泡图表，包含压力/流量/温度曲线
 - **队列管理** - 实时打印队列监控和控制
@@ -31,7 +31,7 @@
 - **手动控制** - 上传、打印和队列管理功能
 
 ### 📱 DE1集成
-![DE1 Plugin](screenshots/de1-plugin.png)
+![DE1 Plugin](screenshots/de1-plugin.jpg)
 - **插件配置** - 服务器网址、端点和上传设置
 - **手动上传** - 立即上传上次冲泡数据
 - **状态显示** - 上次上传结果和时间戳
