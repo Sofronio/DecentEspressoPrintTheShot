@@ -198,10 +198,9 @@ Access `http://your-server:8000` to:
 
 ```
 print_the_shot_server.py     # Main server script
-plugin.tcl                   # DE1 plugin file
+plugin/plugin.tcl            # DE1 plugin file
 shots_data/                  # JSON shot data storage
 shots_images/                # Generated chart images
-plugin/                      # Plugin download directory
 ```
 
 ## Configuration
