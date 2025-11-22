@@ -33,7 +33,6 @@ A complete solution for automatically uploading DECENT espresso machine shot dat
 ### ☕️ DE1 Integration
 ![DE1 Plugin](screenshots/de1-plugin.jpg)
 - **Plugin configuration** - Server URL, endpoints, and upload settings
-- **Language selection** - Bilingual interface with clear toggle buttons
 - **Manual upload** - Instant upload of last shot data
 - **Status display** - Last upload results with timestamps
 - **Auto-upload settings** - Minimum duration and upload preferences
