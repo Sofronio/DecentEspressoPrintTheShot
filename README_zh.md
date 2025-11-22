@@ -13,6 +13,68 @@
 - **多语言支持**: 支持中文和英文
 - **DE1插件**: 与DECENT咖啡机无缝集成
 
+## 截图展示
+
+## 截图展示
+
+### 服务器运行
+![Server Terminal](screenshots/server-terminal.png)
+*PrintTheShot服务器在终端中运行 - 显示端口、数据目录和启动状态*
+
+### 网页管理界面
+![Web Interface](screenshots/web-interface.png)
+*网页管理界面显示最近冲泡数据、打印队列状态和服务器统计信息*
+
+### DE1插件设置
+![DE1 Plugin](screenshots/de1-plugin.png)
+*DE1平板插件设置界面，包含服务器配置和语言切换功能*
+
+### 打印的冲泡图表
+![Printed Chart](screenshots/printed-chart.jpg)
+*实际打印出的冲泡分析图表，显示压力、流量、温度曲线和萃取数据*
+
+### 冲泡数据可视化
+![Shot Visualization](screenshots/shot-visualization.png)
+*网页界面中的交互式冲泡数据可视化，包含多曲线图表*
+
+### 打印队列管理
+![Print Queue](screenshots/print-queue.png)
+*打印队列管理界面，用于监控和控制打印任务*
+
+---
+
+## 详细说明
+
+### 🖥️ 服务器运行
+![Server Terminal](screenshots/server-terminal.png)
+- **服务器启动界面** - 显示端口、数据目录和启动状态
+- **实时日志** - 监控数据接收和打印任务
+- **多语言支持** - 中英文服务器状态信息
+- **活跃连接** - 当前用户会话和系统资源
+
+### 🌐 网页管理
+![Web Interface](screenshots/web-interface.png)
+- **仪表板概览** - 服务器状态和统计信息一览
+- **数据可视化** - 交互式冲泡图表，包含压力/流量/温度曲线
+- **队列管理** - 实时打印队列监控和控制
+- **语言切换** - 轻松在中英文界面间切换
+- **手动控制** - 上传、打印和队列管理功能
+
+### 📱 DE1集成
+![DE1 Plugin](screenshots/de1-plugin.png)
+- **插件配置** - 服务器网址、端点和上传设置
+- **手动上传** - 立即上传上次冲泡数据
+- **状态显示** - 上次上传结果和时间戳
+- **自动上传设置** - 最小持续时间和上传偏好
+
+### 🖨️ 打印输出
+![Printed Chart](screenshots/printed-chart.jpg)
+- **专业图表** - 压力、流量速率和温度曲线
+- **萃取数据** - 时间、输入/输出重量和冲泡时长
+- **方案信息** - 咖啡方案名称和研磨设置
+- **热敏优化** - 专为80mm小票打印机设计
+- **自动切纸支持** - 兼容带切纸功能的打印机
+
 ## 硬件要求
 
 - DECENT DE1/DE1PRO/DE1XL 咖啡机
