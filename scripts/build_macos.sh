@@ -74,9 +74,9 @@ cat > "dist/PrintTheShotServer.app/Contents/Info.plist" << EOF
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>PrintTheShot Server</string>
+    <string>PrintTheShotServer</string>
     <key>CFBundleDisplayName</key>
-    <string>PrintTheShot Server</string>
+    <string>PrintTheShotServer</string>
     <key>CFBundleIdentifier</key>
     <string>com.yourcompany.printtheshot</string>
     <key>CFBundleVersion</key>
@@ -84,7 +84,7 @@ cat > "dist/PrintTheShotServer.app/Contents/Info.plist" << EOF
     <key>CFBundleShortVersionString</key>
     <string>1.0</string>
     <key>CFBundleExecutable</key>
-    <string>PrintTheShot_Server</string>
+    <string>PrintTheShotServer</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>NSHighResolutionCapable</key>
@@ -99,8 +99,8 @@ EOF
 echo "📝 创建启动脚本 / Creating startup script..."
 cat > ../dist/start_server.sh << 'EOF'
 #!/bin/bash
-# PrintTheShot Server 启动脚本 / Startup Script
-echo "🍳 PrintTheShot Server 启动中 / Starting..."
+# PrintTheShotServer 启动脚本 / Startup Script
+echo "🍳 PrintTheShotServer 启动中 / Starting..."
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 ./PrintTheShotServer
