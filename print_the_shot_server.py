@@ -10,6 +10,7 @@ import socketserver
 import json
 import time
 import os
+os.environ['MPLCONFIGDIR'] = '/tmp/matplotlib_cache'
 import threading
 import tempfile
 import subprocess
@@ -32,6 +33,7 @@ except ImportError as e:
     sys.exit(1)
 
 # 全局配置 / Global configuration
+VERSION = "1.1"  # 版本信息
 DATA_DIR = "shots_data"
 IMAGE_DIR = "shots_images"
 PRINT_ENABLED = True  # 默认启用打印 / Default enable printing
@@ -61,7 +63,7 @@ LANGUAGES = {
         'no_shot_data': 'No shot data available',
         'shot_too_short': 'Shot data is too short',
         'error_creating_data': 'Error creating shot data',
-        'server_title': 'PrintTheShot Server',
+        'server_title': 'PrintTheShot Server v{VERSION}',
         'server_desc': 'Receives DECENT espresso machine data, supports auto-printing and data analysis',
         'print_control': '🖨️ Print Control',
         'queue_status': 'Print Queue Status',
@@ -105,7 +107,7 @@ LANGUAGES = {
         'no_shot_data': '无可用的冲泡数据',
         'shot_too_short': '冲泡数据太短',
         'error_creating_data': '创建冲泡数据时出错',
-        'server_title': 'PrintTheShot Server',
+        'server_title': 'PrintTheShot Server v{VERSION}',
         'server_desc': '接收DECENT咖啡机数据，支持自动打印和数据分析',
         'print_control': '🖨️ 打印控制',
         'queue_status': '打印队列状态',
@@ -136,7 +138,11 @@ current_language = 'zh'
 
 def get_text(key):
     """获取当前语言的文本 / Get text in current language"""
-    return LANGUAGES[current_language].get(key, key)
+    text = LANGUAGES[current_language].get(key, key)
+    # 如果是 server_title，插入版本号 / If it is server_title, replace it with version
+    if key == 'server_title':
+        text = text.replace('{VERSION}', VERSION)
+    return text
 
 def parse_multipart_form_data(post_data, content_type):
     """解析 multipart/form-data 数据，替代弃用的 cgi 模块"""
@@ -1351,19 +1357,44 @@ def ensure_directories():
 
 def print_server_info(port):
     """打印服务器信息 / Print server information"""
+    import socket
+    
     print("")
     print("🍳 " + "=" * 60)
-    print("🍳           PrintTheShot Server - Multilingual Version")
+    print("🍳           PrintTheShot Server v" + VERSION)
     print("🍳 " + "=" * 60)
-    print(f"🍳  服务器运行在 / Server running at: http://localhost:{port}")
-    print(f"🍳  管理界面 / Management interface: http://localhost:{port}/")
-    print(f"🍳  上传端点 / Upload endpoint: http://localhost:{port}/upload")
+    
+    # 获取主机名和IP / Get hostname and IP
+    hostname = socket.gethostname()
+    local_ip = "localhost"
+    
+    try:
+        # 获取本机IP地址 / Get local IP
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+    except:
+        # 备选方案：获取所有IP / Get all IP
+        try:
+            local_ip = socket.gethostbyname(hostname)
+        except:
+            pass
+    
+    # 显示所有访问方式 / Display all the access methods
+    print(f"🍳  服务器运行在 / Server running at:")
+    print(f"🍳    - http://localhost:{port} (本机访问 / Local access)")
+    print(f"🍳    - http://{local_ip}:{port} (局域网访问 / LAN access)")
+    print(f"🍳    - http://{hostname}.local:{port} (mDNS访问 / mDNS access)")
+    print(f"🍳  管理界面 / Management interface: http://{local_ip}:{port}/")
+    print(f"🍳  上传端点 / Upload endpoint: http://{local_ip}:{port}/upload")
     print(f"🍳  数据目录 / Data directory: {os.path.abspath(DATA_DIR)}")
     print(f"🍳  图片目录 / Image directory: {os.path.abspath(IMAGE_DIR)}")
     print(f"🍳  最大用户数 / Max users: {MAX_USERS}")
     print(f"🍳  打印功能 / Printing: {'启用 / Enabled' if PRINT_ENABLED else '禁用 / Disabled'}")
     print(f"🍳  启动时间 / Start time: {server_start_time.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"🍳  当前语言 / Current language: {current_language}")
+    print(f"🍳  主机名 / Hostname: {hostname}")
     print("🍳 " + "=" * 60)
     print("🍳  按 Ctrl+C 停止服务器 / Press Ctrl+C to stop server")
     print("")
