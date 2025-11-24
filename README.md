@@ -58,7 +58,7 @@ A complete solution for automatically uploading DECENT espresso machine shot dat
 
 ### For Windows Users (Not tested)
 
-1. **Download the latest release** from the [Releases page](https://github.com/yourusername/printtheshot/releases)
+1. **Download the latest release** from the [Releases page](https://github.com/Sofronio/printtheshot/releases)
 2. **Run the executable**: Double-click `PrintTheShot-Windows.exe`
 3. **Access the web interface**: Open `http://localhost:8000` in your browser
 4. **Configure your printer** through the web interface
@@ -66,7 +66,7 @@ A complete solution for automatically uploading DECENT espresso machine shot dat
 
 ### For macOS Users
 
-1. **Download the macOS version** from the [Releases page](https://github.com/yourusername/printtheshot/releases)
+1. **Download the macOS version** from the [Releases page](https://github.com/Sofronio/printtheshot/releases)
 2. **Run the application**: Double-click `PrintTheShot-Mac.app`
 3. **Access the web interface**: Open `http://localhost:8000` in your browser
 4. **Configure your printer** through the web interface
@@ -74,7 +74,7 @@ A complete solution for automatically uploading DECENT espresso machine shot dat
 
 ### For Linux Users (Not tested)
 
-1. **Download the Linux executable** from the [Releases page](https://github.com/yourusername/printtheshot/releases)
+1. **Download the Linux executable** from the [Releases page](https://github.com/Sofronio/printtheshot/releases)
 2. **Make it executable**:
 ~~~
 chmod +x PrintTheShot-Linux
@@ -97,7 +97,7 @@ If you prefer to build from source or want to contribute:
 
 1. **Clone the repository**:
 ~~~
-git clone https://github.com/yourusername/printtheshot.git
+git clone https://github.com/Sofronio/printtheshot.git
 cd printtheshot
 cd scripts
 ~~~
@@ -162,7 +162,7 @@ pip install matplotlib pillow numpy flask
 
 ~~~
 # Clone the repository
-git clone https://github.com/yourusername/printtheshot.git
+git clone https://github.com/Sofronio/printtheshot.git
 cd printtheshot
 
 # Make server script executable

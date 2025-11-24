@@ -58,7 +58,7 @@
 
 ### Windows 用户 (尚未测试)
 
-1. **下载最新版本**：从[发布页面](https://github.com/yourusername/printtheshot/releases)下载
+1. **下载最新版本**：从[发布页面](https://github.com/Sofronio/printtheshot/releases)下载
 2. **运行可执行文件**：双击 `PrintTheShot-Windows.exe`
 3. **访问网页界面**：在浏览器中打开 `http://localhost:8000`
 4. **配置打印机**：通过网页界面配置
@@ -66,7 +66,7 @@
 
 ### macOS 用户
 
-1. **下载macOS版本**：从[发布页面](https://github.com/yourusername/printtheshot/releases)下载
+1. **下载macOS版本**：从[发布页面](https://github.com/Sofronio/printtheshot/releases)下载
 2. **运行应用程序**：双击 `PrintTheShot-Mac.app`
 3. **访问网页界面**：在浏览器中打开 `http://localhost:8000`
 4. **配置打印机**：通过网页界面配置
@@ -74,7 +74,7 @@
 
 ### Linux 用户 (尚未测试)
 
-1. **下载Linux可执行文件**：从[发布页面](https://github.com/yourusername/printtheshot/releases)下载
+1. **下载Linux可执行文件**：从[发布页面](https://github.com/Sofronio/printtheshot/releases)下载
 2. **设置为可执行**：
 ~~~
 chmod +x PrintTheShot-Linux
@@ -97,7 +97,7 @@ chmod +x PrintTheShot-Linux
 
 1. **克隆代码库**：
 ~~~
-git clone https://github.com/yourusername/printtheshot.git
+git clone https://github.com/Sofronio/printtheshot.git
 cd printtheshot
 cd scripts
 ~~~
@@ -156,7 +156,7 @@ pip install matplotlib pillow numpy
 
 ~~~
 # 克隆代码库
-git clone https://github.com/yourusername/printtheshot.git
+git clone https://github.com/Sofronio/printtheshot.git
 cd printtheshot
 
 # 设置服务器脚本为可执行
