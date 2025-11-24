@@ -54,7 +54,79 @@
 - 树莓派（或任何Linux服务器）
 - 80mm热敏小票打印机（支持大多数CUPS兼容打印机）
 
-## 安装指南
+## 🚀 快速开始（预构建版本）
+
+### Windows 用户
+
+1. **下载最新版本**：从[发布页面](https://github.com/yourusername/printtheshot/releases)下载
+2. **运行可执行文件**：双击 `PrintTheShot-Windows.exe`
+3. **访问网页界面**：在浏览器中打开 `http://localhost:8000`
+4. **配置打印机**：通过网页界面配置
+5. **安装DE1插件**：从网页界面下载插件
+
+### macOS 用户
+
+1. **下载macOS版本**：从[发布页面](https://github.com/yourusername/printtheshot/releases)下载
+2. **运行应用程序**：双击 `PrintTheShot-Mac.app`
+3. **访问网页界面**：在浏览器中打开 `http://localhost:8000`
+4. **配置打印机**：通过网页界面配置
+5. **安装DE1插件**：从网页界面下载插件
+
+### Linux 用户
+
+1. **下载Linux可执行文件**：从[发布页面](https://github.com/yourusername/printtheshot/releases)下载
+2. **设置为可执行**：
+~~~
+chmod +x PrintTheShot-Linux
+~~~
+3. **运行服务器**：
+~~~
+./PrintTheShot-Linux
+~~~
+4. **访问网页界面**：在浏览器中打开 `http://localhost:8000`
+
+## 🔨 从源码构建
+
+如果您希望从源码构建或想要贡献代码：
+
+### 前置要求
+- Python 3.8 或更高版本
+- pip（Python包管理器）
+
+### 构建步骤
+
+1. **克隆代码库**：
+~~~
+git clone https://github.com/yourusername/printtheshot.git
+cd printtheshot
+~~~
+
+2. **安装构建依赖**：
+~~~
+pip install pyinstaller
+pip install -r requirements.txt
+~~~
+
+3. **运行对应平台的构建脚本**：
+
+   **Windows**：
+~~~
+build-windows.bat
+~~~
+
+   **macOS**：
+~~~
+./build-mac.sh
+~~~
+
+   **Linux**：
+~~~
+./build-linux.sh
+~~~
+
+4. **在 `dist/` 目录中找到可执行文件**
+
+## ⚙️ 手动安装（高级用户）
 
 ### 1. 服务器设置（树莓派/Linux）
 

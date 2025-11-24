@@ -54,13 +54,87 @@ A complete solution for automatically uploading DECENT espresso machine shot dat
 - Raspberry Pi (or any Linux server)
 - 80mm thermal receipt printer (supports most CUPS-compatible printers)
 
-## Installation
+## 🚀 Quick Start (Pre-built Executable)
+
+### For Windows Users (Not tested)
+
+1. **Download the latest release** from the [Releases page](https://github.com/yourusername/printtheshot/releases)
+2. **Run the executable**: Double-click `PrintTheShot-Windows.exe`
+3. **Access the web interface**: Open `http://localhost:8000` in your browser
+4. **Configure your printer** through the web interface
+5. **Install the DE1 plugin** from the web interface download section
+
+### For macOS Users
+
+1. **Download the macOS version** from the [Releases page](https://github.com/yourusername/printtheshot/releases)
+2. **Run the application**: Double-click `PrintTheShot-Mac.app`
+3. **Access the web interface**: Open `http://localhost:8000` in your browser
+4. **Configure your printer** through the web interface
+5. **Install the DE1 plugin** from the web interface download section
+
+### For Linux Users (Not tested)
+
+1. **Download the Linux executable** from the [Releases page](https://github.com/yourusername/printtheshot/releases)
+2. **Make it executable**:
+~~~
+chmod +x PrintTheShot-Linux
+~~~
+3. **Run the server**:
+~~~
+./PrintTheShot-Linux
+~~~
+4. **Access the web interface**: Open `http://localhost:8000` in your browser
+
+## 🔨 Building from Source
+
+If you prefer to build from source or want to contribute:
+
+### Prerequisites
+- Python 3.8 or higher
+- pip (Python package manager)
+
+### Build Steps
+
+1. **Clone the repository**:
+~~~
+git clone https://github.com/yourusername/printtheshot.git
+cd printtheshot
+~~~
+
+2. **Install build dependencies**:
+~~~
+pip install pyinstaller
+pip install -r requirements.txt
+~~~
+
+3. **Run build script for your platform**:
+
+   **Windows**:
+~~~
+build-windows.bat
+~~~
+
+   **macOS**:
+~~~
+./build-mac.sh
+~~~
+
+   **Linux**:
+~~~
+./build-linux.sh
+~~~
+
+4. **Find the executable** in the `dist/` directory
+
+## ⚙️ Manual Installation (Advanced)
+
+For users who prefer manual installation or are using platforms not covered by pre-built executables.
 
 ### 1. Server Setup (Raspberry Pi/Linux)
 
 #### Prerequisites
 
-```bash
+~~~
 # Update system
 sudo apt update
 sudo apt upgrade -y
@@ -70,18 +144,18 @@ sudo apt install -y python3 python3-pip python3-venv git cups
 
 # For non-GUI systems, install text browser for printer configuration
 sudo apt install -y lynx
-```
+~~~
 
 #### Python Dependencies
 
-```bash
+~~~
 # Create virtual environment (recommended)
 python3 -m venv printtheshot-env
 source printtheshot-env/bin/activate
 
 # Install Python packages
-pip install matplotlib pillow numpy
-```
+pip install matplotlib pillow numpy flask
+~~~
 
 #### Download and Run
 
