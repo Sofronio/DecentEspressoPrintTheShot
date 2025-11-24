@@ -56,7 +56,7 @@
 
 ## 🚀 快速开始（预构建版本）
 
-### Windows 用户
+### Windows 用户 (尚未测试)
 
 1. **下载最新版本**：从[发布页面](https://github.com/yourusername/printtheshot/releases)下载
 2. **运行可执行文件**：双击 `PrintTheShot-Windows.exe`
@@ -72,7 +72,7 @@
 4. **配置打印机**：通过网页界面配置
 5. **安装DE1插件**：从网页界面下载插件
 
-### Linux 用户
+### Linux 用户 (尚未测试)
 
 1. **下载Linux可执行文件**：从[发布页面](https://github.com/yourusername/printtheshot/releases)下载
 2. **设置为可执行**：
@@ -99,6 +99,7 @@ chmod +x PrintTheShot-Linux
 ~~~
 git clone https://github.com/yourusername/printtheshot.git
 cd printtheshot
+cd scripts
 ~~~
 
 2. **安装构建依赖**：
@@ -111,17 +112,17 @@ pip install -r requirements.txt
 
    **Windows**：
 ~~~
-build-windows.bat
+build_windows.bat
 ~~~
 
    **macOS**：
 ~~~
-./build-mac.sh
+./build_mac.sh
 ~~~
 
    **Linux**：
 ~~~
-./build-linux.sh
+./build_linux.sh
 ~~~
 
 4. **在 `dist/` 目录中找到可执行文件**

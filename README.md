@@ -99,6 +99,7 @@ If you prefer to build from source or want to contribute:
 ~~~
 git clone https://github.com/yourusername/printtheshot.git
 cd printtheshot
+cd scripts
 ~~~
 
 2. **Install build dependencies**:
@@ -111,17 +112,17 @@ pip install -r requirements.txt
 
    **Windows**:
 ~~~
-build-windows.bat
+build_windows.bat
 ~~~
 
    **macOS**:
 ~~~
-./build-mac.sh
+./build_mac.sh
 ~~~
 
    **Linux**:
 ~~~
-./build-linux.sh
+./build_linux.sh
 ~~~
 
 4. **Find the executable** in the `dist/` directory
