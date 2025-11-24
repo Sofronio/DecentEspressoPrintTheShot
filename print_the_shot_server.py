@@ -5,6 +5,7 @@ PrintTheShot Server - Multilingual support with JSON upload, auto-print and web 
 Receives DECENT espresso machine shot data, supports print control and data visualization
 """
 
+import platform
 import http.server
 import socketserver
 import json
@@ -135,6 +136,207 @@ LANGUAGES = {
 
 # 默认语言 / Default language
 current_language = 'zh'
+
+def is_windows():
+    """检查是否在Windows系统上运行"""
+    return platform.system() == 'Windows'
+
+# Windows打印支持函数
+def setup_windows_printing():
+    """设置Windows打印环境"""
+    if not is_windows():
+        return None
+    
+    try:
+        import win32print
+        import win32ui
+        from PIL import Image
+        return win32print, win32ui, Image
+    except ImportError as e:
+        print(f"⚠️  Windows打印支持库未安装: {e}")
+        print("💡 请安装: pip install pywin32")
+        return None
+
+def get_windows_default_printer():
+    """获取Windows默认打印机"""
+    try:
+        import win32print
+        return win32print.GetDefaultPrinter()
+    except ImportError:
+        return None
+    except Exception as e:
+        print(f"❌ 获取默认打印机失败: {e}")
+        return None
+
+def windows_print_image(image_path, printer_name=None):
+    """在Windows系统上打印图像"""
+    printing_libs = setup_windows_printing()
+    if not printing_libs:
+        print("❌ Windows打印支持不可用")
+        return False
+    
+    try:
+        # 在函数内部按需导入
+        import win32print
+        import win32ui
+        from PIL import Image
+    except ImportError as e:
+        print(f"❌ Windows打印支持库未安装: {e}")
+        print("💡 请安装: pip install pywin32")
+        return False
+    
+    try:
+        if printer_name is None:
+            printer_name = get_windows_default_printer()
+            if not printer_name:
+                print("❌ 未找到默认打印机")
+                return False
+        
+        print(f"🖨️ 使用打印机: {printer_name}")
+        
+        # 打开图像
+        img = Image.open(image_path)
+        
+        # 转换为RGB模式（确保兼容性）
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # 打开打印机
+        hprinter = win32print.OpenPrinter(printer_name)
+        try:
+            # 获取打印机信息
+            printer_info = win32print.GetPrinter(hprinter, 2)
+            
+            # 创建打印机设备上下文
+            hdc = win32ui.CreateDC()
+            hdc.CreatePrinterDC(printer_name)
+            
+            # 检查设备上下文是否有效
+            # if not hdc.GetHandle():
+            #     print("❌ 无法创建设备上下文")
+            #     return False
+            
+            # 开始打印作业
+            job_name = f"PrintTheShot_{os.path.basename(image_path)}"
+            hdc.StartDoc(job_name)
+            hdc.StartPage()
+            
+            try:
+                # 获取可打印区域
+                printable_width = hdc.GetDeviceCaps(8)   # HORZRES
+                printable_height = hdc.GetDeviceCaps(10) # VERTRES
+                
+                # 计算缩放比例以适应页面
+                img_width, img_height = img.size
+                scale_x = printable_width / img_width
+                scale_y = printable_height / img_height
+                scale = min(scale_x, scale_y) * 0.95  # 留5%边距
+                
+                # 计算新尺寸和位置（居中）
+                new_width = int(img_width * scale)
+                new_height = int(img_height * scale)
+                x = (printable_width - new_width) // 2
+                y = (printable_height - new_height) // 2
+                
+                # 调整图像大小
+                img_resized = img.resize((new_width, new_height), Image.LANCZOS)
+                
+                # 转换为位图并打印
+                from PIL import ImageWin
+                dib = ImageWin.Dib(img_resized)
+                
+                # 绘制到打印机
+                dib.draw(hdc.GetHandleOutput(), (x, y, x + new_width, y + new_height))
+                
+                # 结束页面和文档
+                hdc.EndPage()
+                hdc.EndDoc()
+                
+                print("✅ Windows打印作业发送成功")
+                return True
+                
+            except Exception as page_error:
+                # 如果页面处理出错，尝试中止文档
+                try:
+                    hdc.EndDoc()
+                except:
+                    hdc.AbortDoc()
+                raise page_error
+                
+        except Exception as e:
+            print(f"❌ Windows打印过程出错: {e}")
+            return False
+        finally:
+            try:
+                win32print.ClosePrinter(hprinter)
+            except:
+                pass
+            try:
+                hdc.DeleteDC()
+            except:
+                pass
+            
+    except Exception as e:
+        print(f"❌ Windows打印失败: {e}")
+        return False
+
+def windows_simple_print(image_path):
+    """Windows简单打印方法 - 使用系统默认打印对话框"""
+    try:
+        # 方法1: 使用系统命令
+        if os.path.exists(image_path):
+            # 使用系统默认程序打印
+            os.startfile(image_path, "print")
+            print("✅ 已发送到Windows打印队列")
+            return True
+    except Exception as e:
+        print(f"❌ 简单打印失败: {e}")
+    
+    return False
+
+def get_windows_print_queue_count():
+    """获取Windows打印队列任务数量"""
+    if not is_windows():
+        return 0
+    
+    try:
+        import win32print
+        # 使用Windows API获取队列信息
+        # 注意：win32print没有直接获取队列数量的简单方法
+        # 使用PowerShell命令作为替代
+        import subprocess
+        result = subprocess.run(
+            ['powershell', '-Command', 'Get-PrintJob | Measure-Object | Select-Object -ExpandProperty Count'],
+            capture_output=True, 
+            text=True,
+            timeout=10
+        )
+        if result.returncode == 0:
+            return int(result.stdout.strip())
+    except ImportError:
+        pass
+    except Exception:
+        pass
+    
+    return 0
+
+def clear_windows_print_queue():
+    """清空Windows打印队列"""
+    if not is_windows():
+        return False
+    
+    try:
+        # 使用PowerShell清空打印队列
+        result = subprocess.run(
+            ['powershell', '-Command', 'Get-PrintJob | Remove-PrintJob'],
+            capture_output=True, 
+            text=True,
+            timeout=30
+        )
+        return result.returncode == 0
+    except Exception as e:
+        print(f"❌ 清空Windows打印队列失败: {e}")
+        return False
 
 def get_text(key):
     """获取当前语言的文本 / Get text in current language"""
@@ -1270,54 +1472,81 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
             return png_path
 
     def print_image(self, image_path):
-        """打印图像 / Print image"""
         if not PRINT_ENABLED:
             print("🖨️ Printing disabled, skipping")
+            return False
+            
+        if not os.path.exists(image_path):
+            print(f"❌ 图像文件不存在: {image_path}")
             return False
             
         try:
             print("🖨️ Sending print job...")
             
-            # 使用优化的打印命令减少走纸 / Use optimized print command to reduce paper feed
-            cmd = [
-                'lpr', 
-                image_path,
-                '-o', 'media=Custom.80x180mm',
-                '-o', 'fit-to-page',
-                '-o', 'margin-top=0',
-                '-o', 'margin-bottom=0'
-            ]
-            
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            
-            if result.returncode == 0:
-                print("✅ Print job sent successfully")
+            if is_windows():
+                # Windows打印 - 尝试多种方法
+                print("🪟 使用Windows打印方式")
                 
-                if image_path.endswith('_print.bmp') and os.path.exists(image_path):
-                    os.remove(image_path)
+                # 方法1: 使用高级Windows打印API
+                success = windows_print_image(image_path)
+                if success:
+                    return True
                     
-                return True
+                # 方法2: 使用简单系统打印
+                print("🔄 尝试简单打印方法...")
+                success = windows_simple_print(image_path)
+                if success:
+                    return True
+                    
+                # 方法3: 使用mspaint打印（备用方案）
+                print("🔄 尝试备用打印方法...")
+                success = self.windows_fallback_print(image_path)
+                if success:
+                    return True
+                    
+                print("❌ 所有Windows打印方法都失败了")
+                return False
             else:
-                # 备用打印命令 / Alternative print command
+                # 使用优化的打印命令减少走纸 / Use optimized print command to reduce paper feed
                 cmd = [
-                    'lp',
+                    'lpr', 
                     image_path,
                     '-o', 'media=Custom.80x180mm',
                     '-o', 'fit-to-page',
-                    '-o', 'margin-top=0'
+                    '-o', 'margin-top=0',
+                    '-o', 'margin-bottom=0'
                 ]
                 
                 result = subprocess.run(cmd, capture_output=True, text=True)
                 
                 if result.returncode == 0:
-                    print("✅ Print job sent (using lp command)")
+                    print("✅ Print job sent successfully")
+                    
                     if image_path.endswith('_print.bmp') and os.path.exists(image_path):
                         os.remove(image_path)
+                        
                     return True
                 else:
-                    print(f"❌ Print failed: {result.stderr}")
-                    return False
+                    # 备用打印命令 / Alternative print command
+                    cmd = [
+                        'lp',
+                        image_path,
+                        '-o', 'media=Custom.80x180mm',
+                        '-o', 'fit-to-page',
+                        '-o', 'margin-top=0'
+                    ]
                     
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    
+                    if result.returncode == 0:
+                        print("✅ Print job sent (using lp command)")
+                        if image_path.endswith('_print.bmp') and os.path.exists(image_path):
+                            os.remove(image_path)
+                        return True
+                    else:
+                        print(f"❌ Print failed: {result.stderr}")
+                        return False
+                        
         except Exception as e:
             print(f"❌ Print error: {str(e)}")
             return False

@@ -56,10 +56,10 @@ A complete solution for automatically uploading DECENT espresso machine shot dat
 
 ## 🚀 Quick Start (Pre-built Executable)
 
-### For Windows Users (Not tested)
+### For Windows Users
 
 1. **Download the latest release** from the [Releases page](https://github.com/Sofronio/printtheshot/releases)
-2. **Run the executable**: Double-click `PrintTheShot-Windows.exe`
+2. **Run the executable**: Double-click `PrintTheShot.exe`
 3. **Access the web interface**: Open `http://localhost:8000` in your browser
 4. **Configure your printer** through the web interface
 5. **Install the DE1 plugin** from the web interface download section
@@ -67,21 +67,21 @@ A complete solution for automatically uploading DECENT espresso machine shot dat
 ### For macOS Users
 
 1. **Download the macOS version** from the [Releases page](https://github.com/Sofronio/printtheshot/releases)
-2. **Run the application**: Double-click `PrintTheShot-Mac.app`
+2. **Run the application**: Double-click `PrintTheShot.app`
 3. **Access the web interface**: Open `http://localhost:8000` in your browser
 4. **Configure your printer** through the web interface
 5. **Install the DE1 plugin** from the web interface download section
 
-### For Linux Users (Not tested)
+### For Linux Users (Not built yet)
 
 1. **Download the Linux executable** from the [Releases page](https://github.com/Sofronio/printtheshot/releases)
 2. **Make it executable**:
 ~~~
-chmod +x PrintTheShot-Linux
+chmod +x PrintTheShot
 ~~~
 3. **Run the server**:
 ~~~
-./PrintTheShot-Linux
+./PrintTheShot
 ~~~
 4. **Access the web interface**: Open `http://localhost:8000` in your browser
 
@@ -117,11 +117,13 @@ build_windows.bat
 
    **macOS**:
 ~~~
+chmod +x build_mac.sh
 ./build_mac.sh
 ~~~
 
    **Linux**:
 ~~~
+chmod +x build_linux.sh
 ./build_linux.sh
 ~~~
 

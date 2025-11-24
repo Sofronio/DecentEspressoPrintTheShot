@@ -56,10 +56,10 @@
 
 ## 🚀 快速开始（预构建版本）
 
-### Windows 用户 (尚未测试)
+### Windows 用户
 
 1. **下载最新版本**：从[发布页面](https://github.com/Sofronio/printtheshot/releases)下载
-2. **运行可执行文件**：双击 `PrintTheShot-Windows.exe`
+2. **运行可执行文件**：双击 `PrintTheShot.exe`
 3. **访问网页界面**：在浏览器中打开 `http://localhost:8000`
 4. **配置打印机**：通过网页界面配置
 5. **安装DE1插件**：从网页界面下载插件
@@ -67,21 +67,21 @@
 ### macOS 用户
 
 1. **下载macOS版本**：从[发布页面](https://github.com/Sofronio/printtheshot/releases)下载
-2. **运行应用程序**：双击 `PrintTheShot-Mac.app`
+2. **运行应用程序**：双击 `PrintTheShot.app`
 3. **访问网页界面**：在浏览器中打开 `http://localhost:8000`
 4. **配置打印机**：通过网页界面配置
 5. **安装DE1插件**：从网页界面下载插件
 
-### Linux 用户 (尚未测试)
+### Linux 用户 (尚未发布)
 
 1. **下载Linux可执行文件**：从[发布页面](https://github.com/Sofronio/printtheshot/releases)下载
 2. **设置为可执行**：
 ~~~
-chmod +x PrintTheShot-Linux
+chmod +x PrintTheShot
 ~~~
 3. **运行服务器**：
 ~~~
-./PrintTheShot-Linux
+./PrintTheShot
 ~~~
 4. **访问网页界面**：在浏览器中打开 `http://localhost:8000`
 
@@ -117,11 +117,13 @@ build_windows.bat
 
    **macOS**：
 ~~~
+chmod +x build_mac.sh
 ./build_mac.sh
 ~~~
 
-   **Linux**：
+   **Linux(尚未测试)**：
 ~~~
+chmod +x build_linux.sh
 ./build_linux.sh
 ~~~
 

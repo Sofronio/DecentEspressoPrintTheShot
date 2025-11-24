@@ -4,3 +4,5 @@ plugin/.DS_Store
 /shots_data
 /build
 /dist
+/scripts/dist
+/scripts/build

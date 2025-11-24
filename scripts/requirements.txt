@@ -2,3 +2,4 @@ matplotlib>=3.5.0
 pillow>=9.0.0
 numpy>=1.21.0
 pyinstaller>=5.0.0
+pywin32>=306; sys_platform == 'win32'

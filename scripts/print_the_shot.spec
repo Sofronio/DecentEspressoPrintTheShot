@@ -28,6 +28,18 @@ def get_matplotlib_data():
         return []
 
 # 分析阶段
+
+# Windows特定的隐藏导入
+windows_hiddenimports = []
+if sys.platform == 'win32':
+    windows_hiddenimports = [
+        'win32print',
+        'win32ui',
+        'win32api', 
+        'win32con',
+        'pywintypes',
+    ]
+
 a = Analysis(
     ['../print_the_shot_server.py'],
     pathex=[os.getcwd(), '..'],
@@ -79,7 +91,7 @@ a = Analysis(
         # 其他可能需要的模块
         'pkg_resources',
         'importlib_resources',
-    ],
+    ] + windows_hiddenimports,
     hookspath=[],
     hooksconfig={
         'matplotlib': {
@@ -120,7 +132,7 @@ exe = EXE(
     a.binaries,
     a.zipfiles,
     a.datas,
-    name='PrintTheShot_Server',
+    name='PrintTheShot',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
