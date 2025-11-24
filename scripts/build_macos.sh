@@ -60,23 +60,23 @@ fi
 
 # 创建 macOS 应用包 / Create macOS application bundle
 echo "📦 创建应用包 / Creating application bundle..."
-mkdir -p "dist/PrintTheShotServer.app/Contents/MacOS"
-mkdir -p "dist/PrintTheShotServer.app/Contents/Resources"
+mkdir -p "dist/PrintTheShot.app/Contents/MacOS"
+mkdir -p "dist/PrintTheShot.app/Contents/Resources"
 
 # 复制可执行文件 / Copy executable
 echo "📦 复制可执行文件到应用包 / Copying executable to application bundle..."
-cp ../dist/PrintTheShotServer "dist/PrintTheShotServer.app/Contents/MacOS/" 2>/dev/null || echo "⚠️  可执行文件复制失败，可能路径不正确 / Executable copy failed, path may be incorrect"
+cp ../dist/PrintTheShot "dist/PrintTheShot.app/Contents/MacOS/" 2>/dev/null || echo "⚠️  可执行文件复制失败，可能路径不正确 / Executable copy failed, path may be incorrect"
 
 # 创建 Info.plist
-cat > "dist/PrintTheShotServer.app/Contents/Info.plist" << EOF
+cat > "dist/PrintTheShot.app/Contents/Info.plist" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>PrintTheShotServer</string>
+    <string>PrintTheShot</string>
     <key>CFBundleDisplayName</key>
-    <string>PrintTheShotServer</string>
+    <string>PrintTheShot</string>
     <key>CFBundleIdentifier</key>
     <string>com.yourcompany.printtheshot</string>
     <key>CFBundleVersion</key>
@@ -84,7 +84,7 @@ cat > "dist/PrintTheShotServer.app/Contents/Info.plist" << EOF
     <key>CFBundleShortVersionString</key>
     <string>1.0</string>
     <key>CFBundleExecutable</key>
-    <string>PrintTheShotServer</string>
+    <string>PrintTheShot</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>NSHighResolutionCapable</key>
@@ -99,17 +99,17 @@ EOF
 echo "📝 创建启动脚本 / Creating startup script..."
 cat > ../dist/start_server.sh << 'EOF'
 #!/bin/bash
-# PrintTheShotServer 启动脚本 / Startup Script
-echo "🍳 PrintTheShotServer 启动中 / Starting..."
+# PrintTheShot 启动脚本 / Startup Script
+echo "🍳 PrintTheShot 启动中 / Starting..."
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
-./PrintTheShotServer
+./PrintTheShot
 EOF
 
 chmod +x ../dist/start_server.sh 2>/dev/null || echo "⚠️  启动脚本权限设置失败 / Startup script permission set failed"
 
 # 设置应用包执行权限 / Set application bundle executable permission
-chmod +x "dist/PrintTheShotServer.app/Contents/MacOS/PrintTheShotServer"
+chmod +x "dist/PrintTheShot.app/Contents/MacOS/PrintTheShot"
 
 # 清理 / Cleanup
 echo "🧹 清理构建环境 / Cleaning build environment..."
@@ -134,10 +134,10 @@ fi
 echo ""
 echo "=================================================="
 echo "✅ macOS 版本构建完成！/ macOS build completed!"
-echo "📁 可执行文件位置 / Executable location: dist/PrintTheShotServer"
-echo "📦 应用包位置 / Application bundle: dist/PrintTheShotServer.app"
+echo "📁 可执行文件位置 / Executable location: dist/PrintTheShot"
+echo "📦 应用包位置 / Application bundle: dist/PrintTheShot.app"
 echo "🚀 启动方式 / Startup methods:"
-echo "   - 直接运行 / Direct run: ./dist/PrintTheShotServer"
+echo "   - 直接运行 / Direct run: ./dist/PrintTheShot"
 echo "   - 使用脚本 / Using script: ./dist/start_server.sh"
-echo "   - 双击应用 / Double-click: dist/PrintTheShotServer.app"
+echo "   - 双击应用 / Double-click: dist/PrintTheShot.app"
 echo "=================================================="
