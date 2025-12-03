@@ -4,6 +4,7 @@ package require json
 set plugin_name "print_the_shot"
 
 # 在命名空间外部定义版本信息，确保插件系统能立即访问
+# Define version information outside the namespace to ensure the plugin system can access it immediately
 set ::plugins::print_the_shot::author "Sofronio Chen"
 set ::plugins::print_the_shot::contact "xbox2xbox@gmail.com" 
 set ::plugins::print_the_shot::version 1.0
@@ -12,17 +13,20 @@ set ::plugins::print_the_shot::name "Print The Shot"
 
 namespace eval ::plugins::${plugin_name} {
     # 重新在命名空间内定义变量（确保一致性）
+    # Redefine variables inside the namespace (ensuring consistency)
     variable author "Sofronio Chen"
     variable contact "xbox2xbox@gmail.com"
     variable version 1.0
     variable description "Upload shots to local server and print it"
     variable name "Print The Shot"
 
-    # Paint settings screen
+    # 创建设置界面
+    # Create settings screen
     proc create_ui {} {
         set needs_save_settings 0
 
-        # Create settings if non-existant
+        # 如果设置不存在则创建
+        # Create settings if non-existent
         if {[array size ::plugins::print_the_shot::settings] == 0} {
             array set ::plugins::print_the_shot::settings {
                 auto_upload 1
@@ -61,9 +65,13 @@ namespace eval ::plugins::${plugin_name} {
     proc upload {content} {
         variable settings
 
+        # 上传咖啡数据到本地服务器，数据长度：
+        # uploading shot to local server, data length:
         msg "uploading shot to local server, data length: [string length $content]"
         
         if {[string length $content] < 100} {
+            # 警告：咖啡数据似乎太短：
+            # Warning: Shot data seems too short:
             msg "Warning: Shot data seems too short: [string length $content] bytes"
         }
         
@@ -73,9 +81,11 @@ namespace eval ::plugins::${plugin_name} {
         set settings(last_upload_id) ""
         
         # 确保内容是 UTF-8 编码
+        # Ensure content is UTF-8 encoded
         set content [encoding convertto utf-8 $content]
 
         # 确定协议
+        # Determine protocol
         set protocol "http"
         if {[info exists settings(use_http)] && $settings(use_http) == 0} {
             set protocol "https"
@@ -87,6 +97,7 @@ namespace eval ::plugins::${plugin_name} {
         msg "Upload URL: $url"
         
         # 使用简单的 JSON 上传，避免 multipart 问题
+        # Use simple JSON upload to avoid multipart issues
         set headerl [list "Content-Type" "application/json"]
         set body $content
 
@@ -95,6 +106,7 @@ namespace eval ::plugins::${plugin_name} {
         set answer ""
 
         # 重试机制
+        # Retry mechanism
         set retryCount 0
         set maxAttempts 3
         set success 0
@@ -125,6 +137,7 @@ namespace eval ::plugins::${plugin_name} {
                 http::cleanup $token
 
                 # 检查是否成功 (2xx 系列)
+                # Check if successful (2xx series)
                 if {$returncode >= 200 && $returncode < 300} {
                     set success 1
                     msg "Upload successful on attempt $attempts"
@@ -195,6 +208,7 @@ namespace eval ::plugins::${plugin_name} {
     }
 
     proc async_dispatch {old new} {
+        # 如果上次流程是热水或热水冲洗，则防止上传数据
         # Prevent uploading of data if last flow was HotWater or HotWaterRinse
         if { $old eq "Espresso" } {
             after 100 ::plugins::print_the_shot::uploadShotData
@@ -205,6 +219,7 @@ namespace eval ::plugins::${plugin_name} {
         variable settings
         
         # 检查是否有可用的冲泡数据
+        # Check if shot data is available
         if {![info exists ::settings(espresso_clock)] || $::settings(espresso_clock) eq ""} {
             popup [translate_toast "No shot data available to upload"]
             set settings(last_upload_result) [translate "No shot data available"]
@@ -213,6 +228,7 @@ namespace eval ::plugins::${plugin_name} {
         }
         
         # 检查冲泡数据是否太短
+        # Check if shot data is too short
         if {[espresso_elapsed length] < 6} {
             popup [translate_toast "Shot data is too short to upload"]
             set settings(last_upload_result) [translate "Shot data is too short"]
@@ -220,14 +236,18 @@ namespace eval ::plugins::${plugin_name} {
             return
         }
         
+        # 手动上传启动
+        # Manual upload initiated
         msg "Manual upload initiated"
         
-        # 创建冲泡数据
+        # 创建咖啡数据
+        # Create shot data
         if {[catch {
             set espresso_data [::shot::create]
             msg "Shot data created, size: [string length $espresso_data] bytes"
             
             # 调用上传函数
+            # Call upload function
             ::plugins::print_the_shot::upload $espresso_data
             
         } error]} {
@@ -261,42 +281,51 @@ namespace eval ::plugins::${plugin_name}::printshot_settings {
         variable widgets
         set page_name [namespace tail [namespace current]]
         
+        # "完成" 按钮
         # "Done" button
         dui add dbutton $page_name 980 1210 1580 1410 -tags page_done -label [translate "Done"] -label_pos {0.5 0.5} -label_font Helv_10_bold -label_fill "#fAfBff"
         
+        # 标题
         # Headline
         dui add dtext $page_name 1280 300 -text [translate "Print The Shot Upload"] -font Helv_20_bold -width 1200 -fill "#444444" -anchor "center" -justify "center"
         
+        # 服务器 URL
         # Server URL
         dui add entry $page_name 280 540 -tags server_url -width 38 -font Helv_8 -borderwidth 1 -bg #fbfaff -foreground #4e85f4 -textvariable ::plugins::print_the_shot::settings(server_url) -relief flat -highlightthickness 1 -highlightcolor #000000 \
             -label [translate "Server URL"] -label_pos {280 480} -label_font Helv_8 -label_width 1000 -label_fill "#444444" 
         bind $widgets(server_url) <Return> [namespace current]::save_settings 
         
+        # 服务器端点
         # Server Endpoint
         dui add entry $page_name 280 720 -tags server_endpoint -width 38 -font Helv_8 -borderwidth 1 -bg #fbfaff -foreground #4e85f4 -textvariable ::plugins::print_the_shot::settings(server_endpoint) -relief flat -highlightthickness 1 -highlightcolor #000000 \
             -label [translate "Server Endpoint"] -label_pos {280 660} -label_font Helv_8 -label_width 1000 -label_fill "#444444" 
         bind $widgets(server_endpoint) <Return> [namespace current]::save_settings
         
         # 紧凑的 checkbox 区域
+        # Compact checkbox area
         dui add dcheckbox $page_name 280 820 -tags use_http -textvariable ::plugins::print_the_shot::settings(use_http) -fill "#444444" \
             -label [translate "Use HTTP (uncheck for HTTPS)"] -label_font Helv_8 -label_fill #4e85f4 -command save_settings 
         
         dui add dcheckbox $page_name 280 880 -tags auto_upload -textvariable ::plugins::print_the_shot::settings(auto_upload) -fill "#444444" \
             -label [translate "Auto-Upload"] -label_font Helv_8 -label_fill #4e85f4 -command save_settings 
         
-        # 更长的 Manual Upload Button - 修复命令调用
+        # 更长的 Manual Upload Button
+        # Longer Manual Upload Button
         dui add dbutton $page_name 280 950 -tags manual_upload -bwidth 600 -bheight 80 -label [translate "Manual Upload Last Shot"] \
             -label_font Helv_9 -label_fill white -command [list ::plugins::print_the_shot::manual_upload] -style insight_ok
         
         # 最小时间输入框和说明文字在同一行，垂直对齐
+        # Minimum time entry and description text on the same line, vertically aligned
         dui add dtext $page_name 360 1055 -tags min_seconds_label -text [translate "S: Minimum duration"] -font Helv_8 -width 600 -fill "#888888" -anchor "nw"
         dui add entry $page_name 280 1050 -tags auto_upload_min_seconds -textvariable ::plugins::print_the_shot::settings(auto_upload_min_seconds) -width 3 -font Helv_8 -borderwidth 1 -bg #fbfaff -foreground #4e85f4 -relief flat -highlightthickness 1 -highlightcolor #000000
         #dui add dtext $page_name 400 1060 -tags min_seconds_desc -text [translate "(minimum shot duration)"] -font Helv_7 -width 500 -fill "#888888" -anchor "nw"
                 
+        # 最后一次上传咖啡
         # Last upload shot
         dui add dtext $page_name 1350 480 -tags last_action_label -text [translate "Last upload:"] -font Helv_8 -width 900 -fill "#444444"
         dui add dtext $page_name 1350 540 -tags last_shot_time -font Helv_8 -width 900 -fill "#4e85f4" -anchor "nw" -justify "left" 
         
+        # 最后上传结果
         # Last upload result
         dui add dtext $page_name 1350 600 -tags last_upload_result -font Helv_8 -width 900 -fill "#4e85f4" -anchor "nw" -justify "left"
     }
@@ -307,6 +336,8 @@ namespace eval ::plugins::${plugin_name}::printshot_settings {
         dui item config $page_to_show last_upload_result -text $::plugins::print_the_shot::settings(last_upload_result)
     }
 
+    # 格式化咖啡开始时间
+    # Format shot start time
     proc format_shot_start {} {
         set dt $::plugins::print_the_shot::settings(last_upload_shot)
         if { $dt eq {} } {
