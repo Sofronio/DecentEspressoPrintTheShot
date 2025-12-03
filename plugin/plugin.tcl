@@ -27,7 +27,7 @@ namespace eval ::plugins::${plugin_name} {
             array set ::plugins::print_the_shot::settings {
                 auto_upload 1
                 server_endpoint upload
-                server_url debox.local:8000
+                server_url yourserverip:8000
                 use_http 1
             }
             set needs_save_settings 1
