@@ -5,6 +5,8 @@ set plugin_name "print_the_shot"
 
 # 在命名空间外部定义版本信息，确保插件系统能立即访问
 # Define version information outside the namespace to ensure the plugin system can access it immediately
+# 服务器部署说明: https://github.com/Sofronio/DecentEspressoPrintTheShot
+# Server deployment instructions: https://github.com/Sofronio/DecentEspressoPrintTheShot
 set ::plugins::print_the_shot::author "Sofronio Chen"
 set ::plugins::print_the_shot::contact "xbox2xbox@gmail.com" 
 set ::plugins::print_the_shot::version 1.0
