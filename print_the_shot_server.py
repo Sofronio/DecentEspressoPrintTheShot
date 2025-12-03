@@ -1370,17 +1370,17 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
             date_str = data.get('date', '')
             timestamp = data.get('timestamp', '')
             
-            if date_str:
+            if timestamp:
                 try:
-                    date_obj = datetime.strptime(date_str, '%a %b %d %H:%M:%S CST %Y')
+                    date_obj = datetime.fromtimestamp(float(timestamp))
                     formatted_date = date_obj.strftime('%Y-%m-%d')
                     formatted_time = date_obj.strftime('%H:%M:%S')
                 except:
                     formatted_date = 'N/A'
                     formatted_time = 'N/A'
-            elif timestamp:
+            elif date_str:
                 try:
-                    date_obj = datetime.fromtimestamp(float(timestamp))
+                    date_obj = datetime.strptime(date_str, '%a %b %d %H:%M:%S %Y')
                     formatted_date = date_obj.strftime('%Y-%m-%d')
                     formatted_time = date_obj.strftime('%H:%M:%S')
                 except:
