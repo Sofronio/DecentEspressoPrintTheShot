@@ -17,6 +17,7 @@ import tempfile
 import subprocess
 import signal
 import sys
+import platform
 import urllib.parse
 from datetime import datetime
 from io import BytesIO
@@ -34,7 +35,7 @@ except ImportError as e:
     sys.exit(1)
 
 # 全局配置 / Global configuration
-VERSION = "1.1"  # 版本信息
+VERSION = "1.3"  # 版本信息 / Version
 DATA_DIR = "shots_data"
 IMAGE_DIR = "shots_images"
 PRINT_ENABLED = True  # 默认启用打印 / Default enable printing
@@ -86,7 +87,28 @@ LANGUAGES = {
         'plugin_step2': 'On tablet SD card find directory: ',
         'plugin_step3': 'Put downloaded plugin.tcl file in this directory',
         'plugin_step4': 'Restart De1App, plugin will auto-load',
-        'plugin_tip': '💡 Plugin function: Automatically uploads shot data to PrintTheShot server for printing'
+        'plugin_tip': '💡 Plugin function: Automatically uploads shot data to PrintTheShot server for printing',
+        'chart_pressure': 'Pressure',
+        'chart_pressure_unit': 'Bar',
+        'chart_flow': 'Flow Rate',
+        'chart_flow_unit': 'g/s',
+        'chart_water_flow': 'Water Flow',
+        'chart_coffee_flow': 'Coffee Flow',
+        'chart_temperature': 'Temp',
+        'chart_temperature_unit': '°C',
+        'chart_time': 'Time',
+        'chart_time_unit': 's',
+        'chart_date_time': 'Date & Time',
+        'chart_profile': 'Profile',
+        'chart_extraction': 'Extraction',
+        'chart_grinder_temp': 'Grinder & Temp',
+        'chart_in_weight': 'In',
+        'chart_out_weight': 'Out',
+        'chart_shot_time': 'Time',
+        'chart_grind_setting': 'Grind',
+        'chart_initial_temp': 'Temp',
+        'chart_unknown_profile': 'Unknown Profile',
+        'chart_na': 'N/A'
     },
     'zh': {
         'queue_status_with_count': '打印队列状态: {} 个任务',
@@ -130,7 +152,28 @@ LANGUAGES = {
         'plugin_step2': '在平板的SD卡中找到目录：',
         'plugin_step3': '将下载的 plugin.tcl 文件放入该目录',
         'plugin_step4': '重启De1App，插件将自动加载',
-        'plugin_tip': '💡 插件功能：自动将冲泡数据上传到PrintTheShot服务器进行打印'
+        'plugin_tip': '💡 插件功能：自动将冲泡数据上传到PrintTheShot服务器进行打印',
+        'chart_pressure': '压力',
+        'chart_pressure_unit': '巴',
+        'chart_flow': '流速',
+        'chart_flow_unit': '克/秒',
+        'chart_water_flow': '水流流速',
+        'chart_coffee_flow': '咖啡流速',
+        'chart_temperature': '温度',
+        'chart_temperature_unit': '摄氏度',
+        'chart_time': '时间',
+        'chart_time_unit': '秒',
+        'chart_date_time': '日期时间',
+        'chart_profile': '冲煮方案',
+        'chart_extraction': '萃取参数',
+        'chart_grinder_temp': '研磨机 & 温度',
+        'chart_in_weight': '咖啡粉',
+        'chart_out_weight': '咖啡液',
+        'chart_shot_time': '时间',
+        'chart_grind_setting': '研磨度',
+        'chart_initial_temp': '温度',
+        'chart_unknown_profile': '未知方案',
+        'chart_na': '未记录'
     }
 }
 
@@ -167,6 +210,324 @@ def get_windows_default_printer():
     except Exception as e:
         print(f"❌ 获取默认打印机失败: {e}")
         return None
+      
+def check_chinese_fonts():
+    """
+    快速获取中文字体，避免全系统扫描
+    使用预定义的常见路径和缓存
+    """
+    import matplotlib.font_manager as fm
+    
+    # 预定义的常见中文字体路径（按平台和常见发行版）
+    predefined_paths = {
+        'linux': [
+            # Ubuntu/Debian/Raspberry Pi OS
+            '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
+            '/usr/share/fonts/wqy-microhei/wqy-microhei.ttc',
+            '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+            '/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc',
+            # CentOS/RHEL/Fedora
+            '/usr/share/fonts/wqy-microhei/wqy-microhei.ttc',
+            '/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc',
+            # Arch Linux
+            '/usr/share/fonts/wenquanyi/wqy-microhei/wqy-microhei.ttc',
+            '/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc',
+            # 通用路径
+            '/usr/local/share/fonts/wqy-microhei.ttc',
+        ],
+        'darwin': [  # macOS
+            '/System/Library/Fonts/PingFang.ttc',
+            '/System/Library/Fonts/STHeiti Light.ttc',
+            '/System/Library/Fonts/STHeiti Medium.ttc',
+            '/Library/Fonts/Microsoft/SimHei.ttf',
+        ],
+        'windows': [
+            'C:\\Windows\\Fonts\\msyh.ttc',      # 微软雅黑
+            'C:\\Windows\\Fonts\\simhei.ttf',    # 黑体
+            'C:\\Windows\\Fonts\\simsun.ttc',    # 宋体
+        ]
+    }
+    
+    system = platform.system().lower()
+    if system == 'darwin':
+        platform_key = 'darwin'
+    elif system == 'windows':
+        platform_key = 'windows'
+    else:
+        platform_key = 'linux'
+    
+    # 1. 首先检查预定义路径（最快）
+    for font_path in predefined_paths[platform_key]:
+        if os.path.exists(font_path):
+            return [font_path]
+    
+    # 2. 检查用户字体目录
+    user_font_dir = os.path.expanduser('~/.fonts')
+    if os.path.exists(user_font_dir):
+        for root, dirs, files in os.walk(user_font_dir):
+            for file in files:
+                if file.lower().endswith(('.ttf', '.ttc', '.otf')):
+                    font_path = os.path.join(root, file)
+                    # 检查是否是中文字体
+                    if any(keyword in file.lower() for keyword in 
+                          ['wqy', 'noto', 'cjk', 'chinese', 'hei', 'song', 'yahei']):
+                        return [font_path]
+    
+    # 3. 使用缓存（如果有）
+    cache_file = os.path.expanduser('~/.cache/printtheshot_fonts.cache')
+    if os.path.exists(cache_file):
+        try:
+            with open(cache_file, 'r') as f:
+                cached_paths = [line.strip() for line in f if line.strip()]
+            for font_path in cached_paths:
+                if os.path.exists(font_path):
+                    return [font_path]
+        except:
+            pass
+    
+    # 4. 最后才使用系统扫描（但有超时限制）
+    print("🔍 正在搜索系统字体（首次运行较慢）...")
+    
+    try:
+        # 设置超时，避免卡住
+        import threading
+        import queue
+        
+        def find_fonts_worker(result_queue):
+            try:
+                fonts = []
+                # 限制扫描的目录，避免全系统扫描
+                scan_dirs = [
+                    '/usr/share/fonts',
+                    '/usr/local/share/fonts',
+                    '/opt/share/fonts',
+                ]
+                
+                for scan_dir in scan_dirs:
+                    if os.path.exists(scan_dir):
+                        for root, dirs, files in os.walk(scan_dir):
+                            for file in files:
+                                if file.lower().endswith(('.ttf', '.ttc', '.otf')):
+                                    font_path = os.path.join(root, file)
+                                    font_lower = file.lower()
+                                    if any(keyword in font_lower for keyword in 
+                                          ['wqy', 'noto', 'cjk']):
+                                        fonts.append(font_path)
+                                        # 找到第一个就返回
+                                        result_queue.put(fonts)
+                                        return
+                
+                # 如果上面没找到，才用完整扫描（但限制数量）
+                all_fonts = fm.findSystemFonts()
+                for font in all_fonts:
+                    if any(keyword in font.lower() for keyword in ['wqy', 'noto', 'cjk']):
+                        fonts.append(font)
+                        if len(fonts) >= 3:  # 找到3个就停止
+                            break
+                
+                result_queue.put(fonts)
+            except Exception as e:
+                result_queue.put([])
+        
+        result_queue = queue.Queue()
+        thread = threading.Thread(target=find_fonts_worker, args=(result_queue,))
+        thread.daemon = True
+        thread.start()
+        thread.join(timeout=5)  # 最多等待5秒
+        
+        if thread.is_alive():
+            print("⏱️  字体搜索超时，使用默认字体")
+            return []
+        
+        fonts = result_queue.get()
+        
+        # 缓存找到的字体路径
+        if fonts:
+            os.makedirs(os.path.dirname(cache_file), exist_ok=True)
+            with open(cache_file, 'w') as f:
+                for font_path in fonts[:5]:  # 最多缓存5个
+                    f.write(font_path + '\n')
+        
+        return fonts[:3]  # 返回前3个
+        
+    except Exception as e:
+        print(f"⚠️ 字体搜索失败: {e}")
+        return []
+
+def get_linux_distro():
+    """获取Linux发行版信息"""
+    distro_info = {'name': 'unknown', 'version': ''}
+    
+    try:
+        # 尝试读取 /etc/os-release
+        if os.path.exists('/etc/os-release'):
+            with open('/etc/os-release', 'r') as f:
+                for line in f:
+                    if line.startswith('NAME='):
+                        distro_info['name'] = line.split('=')[1].strip().strip('"')
+                    elif line.startswith('VERSION_ID='):
+                        distro_info['version'] = line.split('=')[1].strip().strip('"')
+        
+        # 备选方案：检查特定发行版文件
+        elif os.path.exists('/etc/redhat-release'):
+            with open('/etc/redhat-release', 'r') as f:
+                distro_info['name'] = f.read().strip()
+        elif os.path.exists('/etc/debian_version'):
+            distro_info['name'] = 'Debian'
+            with open('/etc/debian_version', 'r') as f:
+                distro_info['version'] = f.read().strip()
+                
+    except Exception as e:
+        print(f"⚠️ 获取发行版信息失败: {e}")
+    
+    return distro_info
+
+def install_chinese_fonts_auto(distro_info):
+    """尝试自动安装中文字体"""
+    print("\n🔄 尝试自动安装中文字体...")
+    
+    distro_name = distro_info.get('name', '').lower()
+    success = False
+    
+    try:
+        if 'ubuntu' in distro_name or 'debian' in distro_name:
+            print("正在安装文泉驿字体...")
+            result = subprocess.run(
+                ['sudo', 'apt-get', 'update'],
+                capture_output=True, text=True
+            )
+            result = subprocess.run(
+                ['sudo', 'apt-get', 'install', '-y', 
+                 'fonts-wqy-microhei', 'fonts-wqy-zenhei', 'fonts-noto-cjk'],
+                capture_output=True, text=True
+            )
+            success = result.returncode == 0
+            
+        elif 'centos' in distro_name or 'rhel' in distro_name:
+            print("正在安装中文字体...")
+            result = subprocess.run(
+                ['sudo', 'yum', 'install', '-y',
+                 'wqy-microhei-fonts', 'wqy-zenhei-fonts', 'google-noto-sans-cjk-fonts'],
+                capture_output=True, text=True
+            )
+            success = result.returncode == 0
+            
+        elif 'fedora' in distro_name:
+            print("正在安装中文字体...")
+            result = subprocess.run(
+                ['sudo', 'dnf', 'install', '-y',
+                 'wqy-microhei-fonts', 'wqy-zenhei-fonts', 'google-noto-sans-cjk-fonts'],
+                capture_output=True, text=True
+            )
+            success = result.returncode == 0
+            
+        elif 'arch' in distro_name or 'manjaro' in distro_name:
+            print("正在安装中文字体...")
+            result = subprocess.run(
+                ['sudo', 'pacman', '-S', '--noconfirm',
+                 'wqy-microhei', 'wqy-zenhei', 'noto-fonts-cjk'],
+                capture_output=True, text=True
+            )
+            success = result.returncode == 0
+            
+        else:
+            print("⚠️ 不支持的发行版，尝试通用安装...")
+            # 尝试下载文泉驿字体到用户目录
+            font_dir = os.path.expanduser('~/.fonts')
+            os.makedirs(font_dir, exist_ok=True)
+            
+            # 下载文泉驿微米黑（备用链接）
+            fonts_to_try = [
+                ('https://github.com/wenq/wqy-microhei/raw/master/wqy-microhei.ttc',
+                 os.path.join(font_dir, 'wqy-microhei.ttc'))
+            ]
+            
+            import urllib.request
+            for url, local_path in fonts_to_try:
+                try:
+                    print(f"下载字体: {os.path.basename(local_path)}")
+                    urllib.request.urlretrieve(url, local_path)
+                    success = True
+                except Exception as e:
+                    print(f"下载失败: {e}")
+            
+            if success:
+                # 更新字体缓存
+                subprocess.run(['fc-cache', '-fv'], capture_output=True)
+        
+        if success:
+            print("✅ 中文字体安装成功！")
+            print("🔄 请重启服务器使字体生效")
+            return True
+        else:
+            print("❌ 自动安装失败，请手动安装")
+            return False
+            
+    except Exception as e:
+        print(f"❌ 安装过程中出错: {e}")
+        return False
+
+def setup_matplotlib_font():
+    """
+    设置matplotlib使用中文字体
+    如果找不到中文字体，则显示安装提示
+    """
+    import matplotlib.font_manager as fm
+    
+    # 只在Linux且当前语言是中文时检查
+    if platform.system() == 'Linux' and current_language == 'zh':
+        if not check_chinese_fonts():
+            print("⚠️ 将继续使用默认字体，中文可能显示为方框")
+    
+    # 尝试找到中文字体
+    font_path = None
+    font_candidates = [
+        # 文泉驿
+        '/usr/share/fonts/wqy-microhei/wqy-microhei.ttc',
+        '/usr/share/fonts/wenquanyi/wqy-microhei/wqy-microhei.ttc',
+        # Noto Sans CJK
+        '/usr/share/fonts/noto/NotoSansCJK-Regular.ttc',
+        '/usr/share/fonts/google-noto/NotoSansCJK-Regular.ttc',
+        # 用户目录
+        os.path.expanduser('~/.fonts/wqy-microhei.ttc'),
+        os.path.expanduser('~/.fonts/NotoSansCJK-Regular.ttc'),
+    ]
+    
+    for candidate in font_candidates:
+        if os.path.exists(candidate):
+            font_path = candidate
+            break
+    
+    # 如果没找到，尝试系统查找
+    if not font_path:
+        try:
+            fonts = [f for f in fm.findSystemFonts() 
+                    if any(keyword in f.lower() for keyword in 
+                          ['wqy', 'noto', 'cjk', 'chinese'])]
+            if fonts:
+                font_path = fonts[0]
+        except:
+            pass
+    
+    # 设置字体
+    if font_path:
+        try:
+            fm.fontManager.addfont(font_path)
+            font_prop = fm.FontProperties(fname=font_path)
+            font_name = font_prop.get_name()
+            
+            matplotlib.rcParams['font.sans-serif'] = [font_name]
+            matplotlib.rcParams['axes.unicode_minus'] = False
+            print(f"✅ 使用中文字体: {os.path.basename(font_path)}")
+        except Exception as e:
+            print(f"⚠️ 设置字体失败: {e}")
+            # 回退到默认
+            matplotlib.rcParams['font.sans-serif'] = ['DejaVu Sans']
+    else:
+        print("⚠️ 未找到中文字体，使用默认字体")
+        matplotlib.rcParams['font.sans-serif'] = ['DejaVu Sans']
+    
+    matplotlib.rcParams['axes.unicode_minus'] = False
 
 def windows_print_image(image_path, printer_name=None):
     """在Windows系统上打印图像"""
@@ -493,6 +854,61 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
+        
+        # 检查字体状态
+        font_status = "✅ 字体支持正常"
+        if platform.system() == 'Linux' and current_language == 'zh':
+            import matplotlib.font_manager as fm
+            zh_fonts = [f for f in fm.findSystemFonts() 
+                      if any(keyword in f.lower() for keyword in ['wqy', 'noto', 'cjk'])]
+            if len(zh_fonts) == 0:
+                font_status = "⚠️ 未检测到中文字体，中文可能显示异常"
+        
+        # 在HTML中添加提示
+        font_warning = ""
+        if "⚠️" in font_status:
+            font_warning = f"""
+            <div class="card" style="background: #fff3cd; border-left: 4px solid #ffc107;">
+                <h3>⚠️ 字体提示</h3>
+                <p>{font_status}</p>
+                <p>Linux用户请安装中文字体：</p>
+                <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px;">
+    # Ubuntu/Debian
+    sudo apt-get install fonts-wqy-microhei fonts-noto-cjk
+
+    # CentOS/RHEL  
+    sudo yum install wqy-microhei-fonts google-noto-sans-cjk-fonts
+
+    # 安装后重启服务器
+                </pre>
+            </div>
+            """
+        
+        # 在HTML模板中插入字体警告
+        status_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>{get_text('server_title')}</title>
+            <!-- ... 其他head内容 ... -->
+        </head>
+        <body>
+            <div class="container">
+                <!-- ... 其他内容 ... -->
+                
+                {font_warning}
+                
+                <div class="header">
+                    <!-- ... 标题内容 ... -->
+                </div>
+                
+                <!-- ... 其余界面代码 ... -->
+            </div>
+        </body>
+        </html>
+        """
+        
+        self.wfile.write(status_html.encode('utf-8'))
         
         # 获取队列信息用于显示
         queue_info = self.get_print_queue_info()
@@ -1263,7 +1679,84 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
         """从Decent咖啡机JSON数据创建适合小票打印机的黑白位图"""
         """Create black and white bitmap suitable for receipt printer from Decent espresso machine JSON data"""
         try:
+            matplotlib.rcdefaults()
             print(f"📊 Generating chart: {input_file}")
+            
+            # ============ 新增部分：根据当前语言设置图表文本 ============
+            # 定义图表文本字典
+            chart_texts = {
+                'pressure_label': f"{get_text('chart_pressure')} ({get_text('chart_pressure_unit')})",
+                'flow_label': f"{get_text('chart_flow')} ({get_text('chart_flow_unit')})",
+                'temp_label': f"{get_text('chart_temperature')} ({get_text('chart_temperature_unit')})",
+                'water_flow': get_text('chart_water_flow'),
+                'coffee_flow': get_text('chart_coffee_flow'),
+                'pressure': get_text('chart_pressure'),
+                'basket_temp': get_text('chart_temperature'),
+                'date_time_title': get_text('chart_date_time'),
+                'profile_title': get_text('chart_profile'),
+                'extraction_title': get_text('chart_extraction'),
+                'grinder_temp_title': get_text('chart_grinder_temp'),
+                'in_weight_label': get_text('chart_in_weight'),
+                'out_weight_label': get_text('chart_out_weight'),
+                'shot_time_label': get_text('chart_shot_time'),
+                'grind_label': get_text('chart_grind_setting'),
+                'initial_temp_label': get_text('chart_initial_temp'),
+                'unknown_profile': get_text('chart_unknown_profile'),
+                'na': get_text('chart_na'),
+                'time_label': f"{get_text('chart_time')} ({get_text('chart_time_unit')})"
+            }
+            
+            # ============ 新增部分：设置中文字体支持 ============
+            import matplotlib.font_manager as fm
+            
+            # 尝试使用跨平台字体
+            font_found = False
+            font_path = None
+            
+            # 常见的中文字体在不同平台的路径
+            font_candidates = [
+                # Windows 字体
+                "C:\\Windows\\Fonts\\simhei.ttf",  # 黑体
+                "C:\\Windows\\Fonts\\msyh.ttc",    # 微软雅黑
+                "C:\\Windows\\Fonts\\simsun.ttc",  # 宋体
+                
+                # macOS 字体
+                "/System/Library/Fonts/PingFang.ttc",      # 苹方
+                "/System/Library/Fonts/STHeiti Light.ttc", # 黑体-简
+                "/System/Library/Fonts/STHeiti Medium.ttc",
+                
+                # Linux 字体 (通常安装文泉驿)
+                "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",  # 文泉驿微米黑
+                "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",  # Noto Sans CJK
+                
+                # 尝试更通用的路径
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # 备用字体，至少显示方框
+            ]
+            
+            # 首先尝试找到可用的中文字体
+            for candidate in font_candidates:
+                if os.path.exists(candidate):
+                    font_path = candidate
+                    font_found = True
+                    print(f"✅ 找到字体文件: {candidate}")
+                    break
+            
+            # 如果没找到字体文件，尝试使用系统默认字体
+            if not font_found:
+                try:
+                    # 查找系统中可用的中文字体
+                    fonts = [f for f in fm.findSystemFonts() if any(keyword in f.lower() for keyword in ['chinese', 'cjk', 'hei', 'song', 'msyh', 'pingfang', 'noto'])]
+                    if fonts:
+                        font_path = fonts[0]
+                        font_found = True
+                        print(f"✅ 找到系统字体: {font_path}")
+                except:
+                    pass
+            
+            # 如果还是没找到，使用matplotlib的默认字体，至少显示方框
+            if not font_found:
+                print("⚠️ 未找到中文字体，使用默认字体（可能显示方框）")
+                # 什么都不做，使用默认字体
             
             with open(input_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -1280,6 +1773,34 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
             flow = flow[:min_length]
             flow_by_weight = flow_by_weight[:min_length]
             basket_temp = basket_temp[:min_length]
+            
+            # 在创建图表之前设置字体（重要！）
+            if font_found and font_path:
+                try:
+                    # 添加字体到matplotlib
+                    fm.fontManager.addfont(font_path)
+                    font_prop = fm.FontProperties(fname=font_path)
+                    font_name = font_prop.get_name()
+                    
+                    # 设置matplotlib使用这个字体
+                    matplotlib.rcParams['font.sans-serif'] = [font_name]
+                    matplotlib.rcParams['axes.unicode_minus'] = False
+                    
+                    print(f"✅ 使用字体: {font_name}")
+                except Exception as e:
+                    print(f"⚠️ 设置字体失败: {e}")
+                    # 设置回退方案：使用默认字体但至少支持中文显示
+                    matplotlib.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial Unicode MS', 'SimHei', 'Microsoft YaHei']
+                    matplotlib.rcParams['axes.unicode_minus'] = False
+            else:
+                # 回退方案：设置常见的中文字体名称，让系统自动选择
+                if is_windows():
+                    matplotlib.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial']
+                elif platform.system() == 'Darwin':  # macOS
+                    matplotlib.rcParams['font.sans-serif'] = ['PingFang TC', 'Heiti SC', 'Arial Unicode MS']
+                else:  # Linux
+                    matplotlib.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei', 'DejaVu Sans', 'Arial']
+                matplotlib.rcParams['axes.unicode_minus'] = False
             
             print(f"  Data length: {min_length} samples")
             """576"""
@@ -1301,37 +1822,39 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
             ax_right = ax_left.twinx()
             ax_temp = ax_left.twinx()
             
-            ax_temp.spines['left'].set_position(('axes', -0.15))
+            ax_temp.spines['left'].set_position(('axes', -0.10))
             ax_temp.yaxis.set_ticks_position('left')
             ax_temp.yaxis.set_label_position('left')
             
-            plt.style.use('grayscale')
+            # plt.style.use('grayscale')
             
             line_width = 1.25 * multiplier
             
             ax_left.plot(elapsed, pressure, linestyle='-', linewidth=line_width, 
-                         label='Pressure', color='black')
+                         label=chart_texts['pressure'], color='black')
             ax_right.plot(elapsed, flow, linestyle='--', linewidth=line_width, 
-                          label='Water Flow', color='black')
+                          label=chart_texts['water_flow'], color='black')
             ax_right.plot(elapsed, flow_by_weight, linestyle=':', linewidth=line_width, 
-                          label='Coffee Flow', color='black')
+                          label=chart_texts['coffee_flow'], color='black')
             ax_temp.plot(elapsed, basket_temp, 
                          linestyle='-.', linewidth=line_width, 
-                         label='Basket Temp', color='black')
+                         label=chart_texts['basket_temp'], color='black')
             
-            ax_left.set_ylim(0, 12)
-            ax_left.set_ylabel('Pressure (Bar)', fontsize=font_m)
-            
-            flow_max = max(max(flow), max(flow_by_weight)) * 1.1
-            ax_right.set_ylim(0, flow_max)
-            ax_right.set_ylabel('Flow Rate (g/s)', fontsize=font_m)
-            
-            temp_min = min(basket_temp) * 0.95
-            temp_max = max(basket_temp) * 1.05
-            ax_temp.set_ylim(temp_min, temp_max)
-            ax_temp.set_ylabel('Temp (°C)', fontsize=font_m)
-            
-            ax_left.set_xlabel('Time (s)', fontsize=font_m)
+            ax_left.set_ylim(0, 10)  # 压力固定在0-10 / Pressure fixed 0-10
+            ax_left.set_ylabel(chart_texts['pressure_label'], fontsize=font_m)
+            ax_left.yaxis.set_label_coords(-0.05, 0.5)  # 调整标签位置，x坐标从-0.05调整到-0.1
+
+            ax_right.set_ylim(0, 10)  # 流速固定在0-10 / Flow rate fixed 0-10
+            ax_right.set_ylabel(chart_texts['flow_label'], fontsize=font_m)
+            ax_right.yaxis.set_label_coords(1.06, 0.5)  # 调整标签位置，x坐标从-0.05调整到-0.1
+
+
+            ax_temp.set_ylim(0, 100)  # 温度固定在0-100度 / Temperature fixed 0-100
+            ax_temp.set_ylabel(chart_texts['temp_label'], fontsize=font_m)
+            ax_temp.yaxis.set_label_coords(-0.18, 0.5)  # 调整标签位置，x坐标从-0.05调整到-0.1
+
+                        
+            # ax_left.set_xlabel('Time (s)', fontsize=font_m)
             
             lines_left, labels_left = ax_left.get_legend_handles_labels()
             lines_right, labels_right = ax_right.get_legend_handles_labels()
@@ -1340,12 +1863,18 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
             all_lines = lines_left + lines_right + lines_temp
             all_labels = labels_left + labels_right + labels_temp
             
+            # ax_left.legend(all_lines, all_labels, 
+            #    fontsize=font_m, loc='upper right', frameon=True, 
+            #    fancybox=False, framealpha=0.8,
+            #    ncol=2)
+            legend_fontsize = font_m * 0.8  # 比原来的字体小20%
             ax_left.legend(all_lines, all_labels, 
-                           fontsize=font_m, loc='upper right', frameon=True, 
-                           fancybox=False, framealpha=0.8,
-                           ncol=2)
+               fontsize=legend_fontsize, loc='lower center', frameon=True, 
+               fancybox=False, framealpha=0.0,
+               ncol=4,  # 增加列数以便更好地排列
+               bbox_to_anchor=(0.5, -0.18))  # 将图例放在图表下方
             
-            ax_left.grid(True, linestyle='--', alpha=0.5, linewidth=line_width / 2)
+            ax_left.grid(True, linestyle='--', alpha=0.6, linewidth=line_width / 2, color='black')
             
             ax_left.tick_params(axis='both', which='major', labelsize=font_m)
             ax_right.tick_params(axis='y', which='major', labelsize=font_m)
@@ -1393,25 +1922,25 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
             initial_basket_temp = basket_temp[0]
             
             text_content = [
-                "Date & Time",
-                "──────",
-                formatted_date,
-                formatted_time,
-                "",
-                "Profile",
-                "──────",
-                profile_title[:18] + "..." if len(profile_title) > 18 else profile_title,
-                "",
-                "Extraction",
-                "──────",
-                f"In: {in_weight}g",
-                f"Out: {out_weight}g", 
-                f"Time: {shot_time}s",
-                "",
-                "Grinder & Temp",
-                "──────",
-                f"Grind: {grinder_setting}",
-                f"Temp: {initial_basket_temp:.1f}°C"
+              chart_texts['date_time_title'],
+              "──────",
+              formatted_date,
+              formatted_time,
+              "",
+              chart_texts['profile_title'],
+              "──────",
+              profile_title[:18] + "..." if len(profile_title) > 18 else profile_title,
+              "",
+              chart_texts['extraction_title'],
+              "──────",
+              f"{chart_texts['in_weight_label']}: {in_weight}g",
+              f"{chart_texts['out_weight_label']}: {out_weight}g", 
+              f"{chart_texts['shot_time_label']}: {shot_time}s",
+              "",
+              chart_texts['grinder_temp_title'],
+              "──────",
+              f"{chart_texts['grind_label']}: {grinder_setting}",
+              f"{chart_texts['initial_temp_label']}: {initial_basket_temp:.1f}°C"
             ]
             
             for i, text in enumerate(text_content):
@@ -1631,7 +2160,7 @@ def print_server_info(port):
 def main():
     """主函数 / Main function"""
     port = 8000
-    
+    setup_matplotlib_font()
     ensure_directories()
     print_server_info(port)
     
