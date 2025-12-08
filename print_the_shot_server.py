@@ -166,7 +166,7 @@ LANGUAGES = {
         'chart_date_time': '日期时间',
         'chart_profile': '冲煮方案',
         'chart_extraction': '萃取参数',
-        'chart_grinder_temp': '研磨机 & 温度',
+        'chart_grinder_temp': '研磨度 & 温度',
         'chart_in_weight': '咖啡粉',
         'chart_out_weight': '咖啡液',
         'chart_shot_time': '时间',
