@@ -164,6 +164,10 @@ cd printtheshot
 # 设置服务器脚本为可执行
 chmod +x print_the_shot_server.py
 
+# 根据需要安装中文字体
+sudo apt update
+sudo apt install fonts-wqy-microhei fonts-noto-cjk
+
 # 运行服务器
 ./print_the_shot_server.py
 ~~~

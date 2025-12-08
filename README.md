@@ -170,6 +170,10 @@ cd printtheshot
 # Make server script executable
 chmod +x print_the_shot_server.py
 
+# Install Chinese font if needed
+sudo apt update
+sudo apt install fonts-wqy-microhei fonts-noto-cjk
+
 # Run server
 ./print_the_shot_server.py
 ~~~
