@@ -35,10 +35,11 @@ except ImportError as e:
     sys.exit(1)
 
 # 全局配置 / Global configuration
-VERSION = "1.3"  # 版本信息 / Version
+VERSION = "1.4"  # 版本信息 / Version
 DATA_DIR = "shots_data"
 IMAGE_DIR = "shots_images"
 PRINT_ENABLED = True  # 默认启用打印 / Default enable printing
+BEAN_INFO_ENABLED = True
 MAX_USERS = 5  # 最大并发用户数 / Max concurrent users
 received_shots = []
 server_start_time = datetime.now()
@@ -72,7 +73,9 @@ LANGUAGES = {
         'refresh_queue': 'Refresh Queue',
         'clear_queue': 'Clear Print Queue',
         'enable_print': 'Enable Printing',
+        'enable_bean_description' : 'Enable Bean Description',
         'disable_print': 'Disable Printing',
+        'disable_bean_description': 'Disable Bean Description',
         'data_upload': '📤 Data Upload',
         'drag_drop': 'Drag and drop JSON file here or click to select',
         'select_file': 'Select File',
@@ -108,7 +111,9 @@ LANGUAGES = {
         'chart_grind_setting': 'Grind',
         'chart_initial_temp': 'Temp',
         'chart_unknown_profile': 'Unknown Profile',
-        'chart_na': 'N/A'
+        'chart_na': 'N/A',
+        'chart_bean_info': 'Bean Info',
+        'chart_tasting_note': 'Tasting Note'
     },
     'zh': {
         'queue_status_with_count': '打印队列状态: {} 个任务',
@@ -137,7 +142,9 @@ LANGUAGES = {
         'refresh_queue': '刷新队列',
         'clear_queue': '清空打印队列',
         'enable_print': '启用打印',
+        'enable_bean_description' : '启用咖啡豆信息',
         'disable_print': '禁用打印',
+        'disable_bean_description' : '禁用咖啡豆信息',
         'data_upload': '📤 数据上传',
         'drag_drop': '拖放JSON文件到这里或点击选择文件',
         'select_file': '选择文件',
@@ -173,7 +180,9 @@ LANGUAGES = {
         'chart_grind_setting': '研磨度',
         'chart_initial_temp': '温度',
         'chart_unknown_profile': '未知方案',
-        'chart_na': '未记录'
+        'chart_na': '未记录',
+        'chart_bean_info': '咖啡豆信息',
+        'chart_tasting_note': '品鉴感受'
     }
 }
 
@@ -759,6 +768,8 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
                 self.handle_language_change()
             elif self.path == '/plugin/plugin.tcl':
                 self.serve_plugin_file()
+            elif self.path == '/api/settings':
+                self.send_settings()
             else:
                 super().do_GET()
 
@@ -787,6 +798,8 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
                 self.handle_print_control()
             elif self.path == '/api/language':
                 self.handle_language_change()
+            elif self.path == '/api/settings/beaninfo':
+                self.handle_beaninfo_setting()
             else:
                 self.send_error(404, "Endpoint not found")
 
@@ -831,6 +844,51 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
                 
             except Exception as e:
                 self.send_error(500, f"Language change error: {str(e)}")
+                
+    def send_settings(self):
+        """发送当前设置"""
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        
+        settings = {
+            'bean_info_enabled': BEAN_INFO_ENABLED,
+            'print_enabled': PRINT_ENABLED,
+            'max_users': MAX_USERS
+        }
+        
+        self.wfile.write(json.dumps(settings).encode('utf-8'))
+
+    def handle_beaninfo_setting(self):
+        """处理豆子信息设置 / Handle bean info change requests"""
+        global BEAN_INFO_ENABLED
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            request_data = json.loads(post_data.decode('utf-8'))
+            if 'enabled' in request_data:
+                BEAN_INFO_ENABLED = request_data['enabled']
+                print(f"🔧 Bean info setting changed to: {BEAN_INFO_ENABLED}")
+                
+            # 根据当前语言返回消息
+            if current_language == 'zh':
+                message = f'豆子信息打印{"已启用" if BEAN_INFO_ENABLED else "已禁用"}'
+            else:
+                message = f'Bean info printing {"enabled" if BEAN_INFO_ENABLED else "disabled"}'
+            
+            response = {
+                'success': True,
+                'bean_info_enabled': BEAN_INFO_ENABLED,
+                'message': message
+            }
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode('utf-8'))
+            
+        except Exception as e:
+            self.send_error(500, f"Settings error: {str(e)}")
 
     def serve_plugin_file(self):
         """提供插件文件下载 / Serve plugin file download"""
@@ -983,6 +1041,7 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
                             <button class="btn btn-info" onclick="refreshQueue()">{get_text('refresh_queue')}</button>
                             <button class="btn btn-warning" onclick="clearQueue()">{get_text('clear_queue')}</button>
                             <button class="btn btn-primary" onclick="togglePrinting()" id="printToggle">{get_text('enable_print')}</button>
+                            <button class="btn btn-info" onclick="toggleBeanInfo()" id="beanInfoToggle">{get_text('enable_bean_description')}</button>
                             <a href="./plugin/plugin.tcl" download class="btn btn-success">{get_text('plugin_download')}</a>
                         </div>
                         <!-- 插件说明 / Plugin instructions -->
@@ -1028,6 +1087,7 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
             <script>
                 let printEnabled = true;
                 let currentLang = '{current_language}';
+                let beanInfoEnabled = true;
                 
                 // 加载初始数据 / Load initial data
                 document.addEventListener('DOMContentLoaded', function() {{
@@ -1035,6 +1095,7 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
                     loadShots();
                     loadPrinters();
                     loadQueueStatus();
+                    loadSettings(); 
                     
                     // 设置文件上传 / Setup file upload
                     document.getElementById('fileInput').addEventListener('change', handleFileUpload);
@@ -1045,6 +1106,58 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
                     setInterval(loadQueueStatus, 8000);
                 }});
                 
+                // 初始化时从服务器获取设置
+                async function loadSettings() {{
+                    try {{
+                        const response = await fetch('/api/settings');
+                        const data = await response.json();
+                        beanInfoEnabled = data.bean_info_enabled !== false; // 默认为true
+                        
+                        // 更新按钮状态
+                        updateBeanInfoToggle();
+                    }} catch (error) {{
+                        console.error('Error loading settings:', error);
+                    }}
+                }}
+                
+                // 切换豆子信息打印
+                async function toggleBeanInfo() {{
+                    try {{
+                        const newState = !beanInfoEnabled;
+                        
+                        const response = await fetch('/api/settings/beaninfo', {{
+                            method: 'POST',
+                            headers: {{ 'Content-Type': 'application/json' }},
+                            body: JSON.stringify({{ enabled: newState }})
+                        }});
+                        
+                        const result = await response.json();
+                        if (result.success) {{
+                            beanInfoEnabled = newState;
+                            updateBeanInfoToggle();
+                            // 不显示提示，让用户从按钮状态就能看出来
+                        }} else {{
+                            alert('设置失败: ' + result.message);
+                        }}
+                    }} catch (error) {{
+                        console.error('Error toggling bean info:', error);
+                        alert('设置失败: ' + error);
+                    }}
+                }}
+
+                // 更新按钮显示
+                function updateBeanInfoToggle() {{
+                    const btn = document.getElementById('beanInfoToggle');
+                    
+                    if (beanInfoEnabled) {{
+                        btn.textContent = '{get_text('disable_bean_description')}';
+                        btn.className = 'btn btn-warning';  // 黄色警告样式
+                    }} else {{
+                        btn.textContent = '{get_text('enable_bean_description')}';
+                        btn.className = 'btn btn-success';  // 绿色启用样式
+                    }}
+                }}
+                                
                 async function changeLanguage(lang) {{
                     try {{
                         const response = await fetch('/api/language', {{
@@ -1703,7 +1816,9 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
                 'initial_temp_label': get_text('chart_initial_temp'),
                 'unknown_profile': get_text('chart_unknown_profile'),
                 'na': get_text('chart_na'),
-                'time_label': f"{get_text('chart_time')} ({get_text('chart_time_unit')})"
+                'time_label': f"{get_text('chart_time')} ({get_text('chart_time_unit')})",
+                'bean_info': get_text('chart_bean_info'),
+                'tasting_note': get_text('chart_tasting_note'),
             }
             
             # ============ 新增部分：设置中文字体支持 ============
@@ -1816,11 +1931,28 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
             font_m = 8 * multiplier
             font_l = 10 * multiplier
             
-            gs = plt.GridSpec(1, 2, width_ratios=[0.65, 0.35])
+            #2026 gs = plt.GridSpec(1, 2, width_ratios=[0.65, 0.35])
+            #bean_info_enabled = getattr(self, 'bean_info_enabled', True)
+            
+            bean_info_enabled = BEAN_INFO_ENABLED
+            #gs = plt.GridSpec(1, 3, width_ratios=[0.65, 0.12, 0.23])
+            if bean_info_enabled:
+            # 启用豆子信息：三列布局
+                #gs = plt.GridSpec(1, 3, width_ratios=[0.9, 0.05, 0.10])
+                gs = plt.GridSpec(1, 3, width_ratios=[0.65, 0.12, 0.23], wspace=0.2)
+            else:
+                gs = plt.GridSpec(1, 2, width_ratios=[0.65, 0.35])
+
             
             ax_left = fig.add_subplot(gs[0])
             ax_right = ax_left.twinx()
             ax_temp = ax_left.twinx()
+            
+            ax_text1 = fig.add_subplot(gs[1])  # 第一列文本（原有信息）
+            ax_text1.axis('off')
+            if bean_info_enabled:
+                ax_text2 = fig.add_subplot(gs[2])  # 第二列文本（咖啡豆信息）
+                ax_text2.axis('off')
             
             ax_temp.spines['left'].set_position(('axes', -0.10))
             ax_temp.yaxis.set_ticks_position('left')
@@ -1887,8 +2019,8 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
             for spine in ax_temp.spines.values():
                 spine.set_linewidth(line_width)
             
-            ax_text = fig.add_subplot(gs[1])
-            ax_text.axis('off')
+            ax_text1 = fig.add_subplot(gs[1])
+            ax_text1.axis('off')
             
             profile_title = data['profile'].get('title', 'Unknown Profile')
             in_weight = data['meta'].get('in', 'N/A')
@@ -1921,7 +2053,14 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
             
             initial_basket_temp = basket_temp[0]
             
-            text_content = [
+            notes = data['profile'].get('notes', '')
+            if notes:
+                # 按换行符分割描述信息
+                notes_lines = notes.split('\n')
+            else:
+                notes_lines = []
+            
+            text_content1 = [
               chart_texts['date_time_title'],
               "──────",
               formatted_date,
@@ -1943,8 +2082,8 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
               f"{chart_texts['initial_temp_label']}: {initial_basket_temp:.1f}°C"
             ]
             
-            for i, text in enumerate(text_content):
-                if text in ["Date & Time", "Profile", "Extraction", "Grinder & Temp"]:
+            for i, text in enumerate(text_content1):
+                if text in [chart_texts['date_time_title'], chart_texts['profile_title'], chart_texts['extraction_title'], chart_texts['grinder_temp_title']]:
                     fontsize = font_l
                     weight = 'bold'
                 elif text == "──────":
@@ -1956,12 +2095,83 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
                     fontsize = font_m
                     weight = 'normal'
                 
-                ax_text.text(0.05, 0.98 - i * 0.05, text, 
+                ax_text1.text(0.2, 0.98 - i * 0.05, text, 
                             fontsize=fontsize, ha='left', va='top',
-                            transform=ax_text.transAxes,
+                            transform=ax_text1.transAxes,
                             weight=weight)
             
-            plt.tight_layout(pad=1.0)
+            if bean_info_enabled:
+                # 第二列文本（咖啡豆信息）
+              text_content2 = []
+              
+              # 添加 Bean Info 标题
+              bean_info_title = chart_texts['bean_info']
+              text_content2.append(bean_info_title)
+              text_content2.append("──────")
+              
+              # 获取 notes 并按 \n 分割
+              notes = data['profile'].get('notes', '')
+              if notes:
+                  # 先替换可能的中文换行符
+                  notes = notes.replace('\\n', '\n')
+                  notes_lines = notes.split('\n')
+                  
+                  # 处理每一行，确保长度合适
+                  processed_lines = []
+                  for line in notes_lines:
+                      line = line.strip()
+                      if line:
+                          # 如果单行太长，进行分割
+                          if len(line) > 25:
+                              # 尝试按标点符号分割
+                              import re
+                              # 按中文标点分割：，。；、
+                              parts = re.split(r'[，。；、\s]', line)
+                              for part in parts:
+                                  if part.strip():
+                                      # 如果部分还是太长，按长度分割
+                                      if len(part) > 25:
+                                          for i in range(0, len(part), 25):
+                                              processed_lines.append(part[i:i+25].strip())
+                                      else:
+                                          processed_lines.append(part.strip())
+                          else:
+                              processed_lines.append(line)
+                  
+                  # 添加到文本内容中（最多显示6行）
+                  for line in processed_lines[:6]:
+                      text_content2.append(line)
+              else:
+                  text_content2.append(chart_texts['na'])
+
+              # 添加空行
+              text_content2.append("")
+
+              # 添加 Tasting Note 标题
+              tasting_note_title = chart_texts['tasting_note']
+              text_content2.append(tasting_note_title)
+              text_content2.append("──────")
+              
+              # 绘制第二列文本
+              for i, text in enumerate(text_content2):
+                  if text in [chart_texts['bean_info'], chart_texts['tasting_note'], chart_texts['grinder_temp_title']]:
+                      fontsize = font_l
+                      weight = 'bold'
+                  elif text == "──────":
+                      fontsize = font_m
+                      weight = 'normal'
+                  elif text == "":
+                      continue
+                  else:
+                      fontsize = font_m
+                      weight = 'normal'
+                      
+                  ax_text2.text(0.01, 0.98 - i * 0.05, text,   # 更小的行间距
+                      fontsize=fontsize, ha='left', va='top',
+                      transform=ax_text2.transAxes,
+                      weight=weight)
+            
+            plt.tight_layout(pad=0.5)
             plt.savefig(output_file, dpi=dpi, bbox_inches='tight', 
                         facecolor='white', edgecolor='none',
                         pad_inches=0.1)
@@ -2097,6 +2307,7 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
         if shot_info.get('profile') != 'unknown':
             print(f"👤 冲煮方案 / Profile: {shot_info['profile']}")
             
+        print(f"🌱 豆子信息 / Bean info: {'启用 / Enabled' if BEAN_INFO_ENABLED else '禁用 / Disabled'}")
         print(f"🖨️ 自动打印 / Auto print: {'启用 / Enabled' if PRINT_ENABLED else '禁用 / Disabled'}")
         print("✅ 数据保存成功! / Data saved successfully!")
         print("=" * 60)
