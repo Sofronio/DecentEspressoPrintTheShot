@@ -35,7 +35,7 @@ except ImportError as e:
     sys.exit(1)
 
 # 全局配置 / Global configuration
-VERSION = "1.5"  # 版本信息 / Version
+VERSION = "1.6"  # 版本信息 / Version
 DATA_DIR = "shots_data"
 IMAGE_DIR = "shots_images"
 PRINT_ENABLED = True  # 默认启用打印 / Default enable printing
@@ -101,10 +101,10 @@ LANGUAGES = {
         'chart_temperature_unit': '°C',
         'chart_time': 'Time',
         'chart_time_unit': 's',
-        'chart_date_time': 'Date & Time',
+        'chart_date_time': 'Date&Time',
         'chart_profile': 'Profile',
         'chart_extraction': 'Extraction',
-        'chart_grinder_temp': 'Grinder & Temp',
+        'chart_grinder_temp': 'Grind&Temp',
         'chart_in_weight': 'In',
         'chart_out_weight': 'Out',
         'chart_shot_time': 'Time',
@@ -113,8 +113,9 @@ LANGUAGES = {
         'chart_unknown_profile': 'Unknown Profile',
         'chart_na': 'N/A',
         'chart_bean_info': 'Bean Info',
+        'chart_profile_info': 'Profile Info', 
         'chart_tasting_note': 'Tasting Note',
-        'chart_machine_id_label': 'Machine'
+        'chart_machine_id_label': ''
     },
     'zh': {
         'queue_status_with_count': '打印队列状态: {} 个任务',
@@ -183,8 +184,9 @@ LANGUAGES = {
         'chart_unknown_profile': '未知方案',
         'chart_na': '未记录',
         'chart_bean_info': '咖啡豆信息',
+        'chart_profile_info': '冲煮方案信息',
         'chart_tasting_note': '品鉴感受',
-        'chart_machine_id_label': '咖啡机'
+        'chart_machine_id_label': ''
     }
 }
 
@@ -1896,548 +1898,662 @@ class PrintTheShotHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             print(f"❌ 清空打印队列失败 / Failed to clear print queue: {e}")
             return False
+          
+    
 
     def create_coffee_plot(self, input_file, output_file, machine_id='UNKNOWN'):
-      """从Decent咖啡机JSON数据创建适合小票打印机的黑白位图"""
-      """Create black and white bitmap suitable for receipt printer from Decent espresso machine JSON data"""
-      try:
-          matplotlib.rcdefaults()
-          print(f"📊 Generating chart: {input_file}")
-          
-          # ============ 新增部分：根据当前语言设置图表文本 ============
-          # 定义图表文本字典
-          chart_texts = {
-              'pressure_label': f"{get_text('chart_pressure')} ({get_text('chart_pressure_unit')})",
-              'flow_label': f"{get_text('chart_flow')} ({get_text('chart_flow_unit')})",
-              'temp_label': f"{get_text('chart_temperature')} ({get_text('chart_temperature_unit')})",
-              'water_flow': get_text('chart_water_flow'),
-              'coffee_flow': get_text('chart_coffee_flow'),
-              'pressure': get_text('chart_pressure'),
-              'basket_temp': get_text('chart_temperature'),
-              'date_time_title': get_text('chart_date_time'),
-              'profile_title': get_text('chart_profile'),
-              'extraction_title': get_text('chart_extraction'),
-              'grinder_temp_title': get_text('chart_grinder_temp'),
-              'in_weight_label': get_text('chart_in_weight'),
-              'out_weight_label': get_text('chart_out_weight'),
-              'shot_time_label': get_text('chart_shot_time'),
-              'grind_label': get_text('chart_grind_setting'),
-              'initial_temp_label': get_text('chart_initial_temp'),
-              'unknown_profile': get_text('chart_unknown_profile'),
-              'na': get_text('chart_na'),
-              'time_label': f"{get_text('chart_time')} ({get_text('chart_time_unit')})",
-              'bean_info': get_text('chart_bean_info'),
-              'tasting_note': get_text('chart_tasting_note'),
-          }
-          
-          # ============ 新增部分：设置中文字体支持 ============
-          import matplotlib.font_manager as fm
-          
-          # 尝试使用跨平台字体
-          font_found = False
-          font_path = None
-          
-          # 常见的中文字体在不同平台的路径
-          font_candidates = [
-              # Windows 字体
-              "C:\\Windows\\Fonts\\simhei.ttf",  # 黑体
-              "C:\\Windows\\Fonts\\msyh.ttc",    # 微软雅黑
-              "C:\\Windows\\Fonts\\simsun.ttc",  # 宋体
-              
-              # macOS 字体
-              "/System/Library/Fonts/PingFang.ttc",      # 苹方
-              "/System/Library/Fonts/STHeiti Light.ttc", # 黑体-简
-              "/System/Library/Fonts/STHeiti Medium.ttc",
-              
-              # Linux 字体 (通常安装文泉驿)
-              "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",  # 文泉驿微米黑
-              "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",  # Noto Sans CJK
-              
-              # 尝试更通用的路径
-              "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # 备用字体，至少显示方框
-          ]
-          
-          # 首先尝试找到可用的中文字体
-          for candidate in font_candidates:
-              if os.path.exists(candidate):
-                  font_path = candidate
-                  font_found = True
-                  print(f"✅ 找到字体文件: {candidate}")
-                  break
-          
-          # 如果没找到字体文件，尝试使用系统默认字体
-          if not font_found:
-              try:
-                  # 查找系统中可用的中文字体
-                  fonts = [f for f in fm.findSystemFonts() if any(keyword in f.lower() for keyword in ['chinese', 'cjk', 'hei', 'song', 'msyh', 'pingfang', 'noto'])]
-                  if fonts:
-                      font_path = fonts[0]
-                      font_found = True
-                      print(f"✅ 找到系统字体: {font_path}")
-              except:
-                  pass
-          
-          # 如果还是没找到，使用matplotlib的默认字体，至少显示方框
-          if not font_found:
-              print("⚠️ 未找到中文字体，使用默认字体（可能显示方框）")
-              # 什么都不做，使用默认字体
-          
-          with open(input_file, 'r', encoding='utf-8') as f:
-              data = json.load(f)
-          
-          elapsed = list(map(float, data['elapsed']))
-          pressure = list(map(float, data['pressure']['pressure']))
-          flow = list(map(float, data['flow']['flow']))
-          flow_by_weight = list(map(float, data['flow']['by_weight']))
-          basket_temp = list(map(float, data['temperature']['basket']))
-          
-          min_length = min(len(elapsed), len(pressure), len(flow), len(flow_by_weight), len(basket_temp))
-          elapsed = elapsed[:min_length]
-          pressure = pressure[:min_length]
-          flow = flow[:min_length]
-          flow_by_weight = flow_by_weight[:min_length]
-          basket_temp = basket_temp[:min_length]
-          
-          # 在创建图表之前设置字体（重要！）
-          if font_found and font_path:
-              try:
-                  # 添加字体到matplotlib
-                  fm.fontManager.addfont(font_path)
-                  font_prop = fm.FontProperties(fname=font_path)
-                  font_name = font_prop.get_name()
-                  
-                  # 设置matplotlib使用这个字体
-                  matplotlib.rcParams['font.sans-serif'] = [font_name]
-                  matplotlib.rcParams['axes.unicode_minus'] = False
-                  
-                  print(f"✅ 使用字体: {font_name}")
-              except Exception as e:
-                  print(f"⚠️ 设置字体失败: {e}")
-                  # 设置回退方案：使用默认字体但至少支持中文显示
-                  matplotlib.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial Unicode MS', 'SimHei', 'Microsoft YaHei']
-                  matplotlib.rcParams['axes.unicode_minus'] = False
-          else:
-              # 回退方案：设置常见的中文字体名称，让系统自动选择
-              if is_windows():
-                  matplotlib.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial']
-              elif platform.system() == 'Darwin':  # macOS
-                  matplotlib.rcParams['font.sans-serif'] = ['PingFang TC', 'Heiti SC', 'Arial Unicode MS']
-              else:  # Linux
-                  matplotlib.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei', 'DejaVu Sans', 'Arial']
-              matplotlib.rcParams['axes.unicode_minus'] = False
-          
-          print(f"  Data length: {min_length} samples")
-          """576"""
-          multiplier = 1
-          width_px = 576 * multiplier
-          height_px = int(width_px * 180 / 80)
-          dpi = 203
-          fig_width = width_px / dpi
-          fig_height = height_px / dpi
-          
-          fig = plt.figure(figsize=(fig_height, fig_width), dpi=dpi)
+        """
+        Create black and white bitmap suitable for receipt printer from Decent espresso machine JSON data
+        从Decent咖啡机JSON数据创建适合小票打印机的黑白位图
+        """
+        try:
+            matplotlib.rcdefaults()
+            print(f"📊 Generating chart: {input_file}")
+            
+            # ============ 设置图表文本（根据当前语言） ============
+            # Set chart text (based on current language)
+            chart_texts = {
+                'pressure_label': f"{get_text('chart_pressure')} ({get_text('chart_pressure_unit')})",
+                'flow_label': f"{get_text('chart_flow')} ({get_text('chart_flow_unit')})",
+                'temp_label': f"{get_text('chart_temperature')} ({get_text('chart_temperature_unit')})",
+                'water_flow': get_text('chart_water_flow'),
+                'coffee_flow': get_text('chart_coffee_flow'),
+                'pressure': get_text('chart_pressure'),
+                'basket_temp': get_text('chart_temperature'),
+                'date_time_title': get_text('chart_date_time'),
+                'profile_title': get_text('chart_profile'),
+                'extraction_title': get_text('chart_extraction'),
+                'grinder_temp_title': get_text('chart_grinder_temp'),
+                'in_weight_label': get_text('chart_in_weight'),
+                'out_weight_label': get_text('chart_out_weight'),
+                'shot_time_label': get_text('chart_shot_time'),
+                'grind_label': get_text('chart_grind_setting'),
+                'initial_temp_label': get_text('chart_initial_temp'),
+                'unknown_profile': get_text('chart_unknown_profile'),
+                'na': get_text('chart_na'),
+                'time_label': f"{get_text('chart_time')} ({get_text('chart_time_unit')})",
+                'bean_info': get_text('chart_bean_info'),
+                'profile_info': get_text('chart_profile_info'),  # 新增
+                'tasting_note': get_text('chart_tasting_note'),
+            }
+            
+            # ============ 设置中文字体支持 ============
+            # Setup Chinese font support
+            import matplotlib.font_manager as fm
+            
+            # 尝试使用跨平台字体 / Try to use cross-platform fonts
+            font_found = False
+            font_path = None
+            
+            # 常见的中文字体在不同平台的路径 / Common Chinese font paths on different platforms
+            font_candidates = [
+                # Windows 字体 / Windows fonts
+                "C:\\Windows\\Fonts\\simhei.ttf",  # 黑体 / HeiTi
+                "C:\\Windows\\Fonts\\msyh.ttc",    # 微软雅黑 / Microsoft YaHei
+                "C:\\Windows\\Fonts\\simsun.ttc",  # 宋体 / SongTi
+                
+                # macOS 字体 / macOS fonts
+                "/System/Library/Fonts/PingFang.ttc",      # 苹方 / PingFang
+                "/System/Library/Fonts/STHeiti Light.ttc", # 黑体-简 / HeiTi Simplified
+                "/System/Library/Fonts/STHeiti Medium.ttc",
+                
+                # Linux 字体 / Linux fonts (usually install WenQuanYi)
+                "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",  # 文泉驿微米黑
+                "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",  # Noto Sans CJK
+                
+                # 尝试更通用的路径 / Try more general paths
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # 备用字体，至少显示方框 / Fallback font
+            ]
+            
+            # 首先尝试找到可用的中文字体 / First try to find available Chinese font
+            for candidate in font_candidates:
+                if os.path.exists(candidate):
+                    font_path = candidate
+                    font_found = True
+                    print(f"✅ Found font file: {candidate}")
+                    break
+            
+            # 如果没找到字体文件，尝试使用系统默认字体 / If no font found, try system default fonts
+            if not font_found:
+                try:
+                    # 查找系统中可用的中文字体 / Find available Chinese fonts in system
+                    fonts = [f for f in fm.findSystemFonts() if any(keyword in f.lower() for keyword in ['chinese', 'cjk', 'hei', 'song', 'msyh', 'pingfang', 'noto'])]
+                    if fonts:
+                        font_path = fonts[0]
+                        font_found = True
+                        print(f"✅ Found system font: {font_path}")
+                except:
+                    pass
+            
+            with open(input_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # 数据提取和处理（保持不变） / Data extraction and processing (unchanged)
+            elapsed = list(map(float, data['elapsed']))
+            pressure = list(map(float, data['pressure']['pressure']))
+            flow = list(map(float, data['flow']['flow']))
+            flow_by_weight = list(map(float, data['flow']['by_weight']))
+            basket_temp = list(map(float, data['temperature']['basket']))
+            
+            min_length = min(len(elapsed), len(pressure), len(flow), len(flow_by_weight), len(basket_temp))
+            elapsed = elapsed[:min_length]
+            pressure = pressure[:min_length]
+            flow = flow[:min_length]
+            flow_by_weight = flow_by_weight[:min_length]
+            basket_temp = basket_temp[:min_length]
+            
+            # 在创建图表之前设置字体（重要！）/ Set font before creating chart (important!)
+            if font_found and font_path:
+                try:
+                    # 添加字体到matplotlib / Add font to matplotlib
+                    fm.fontManager.addfont(font_path)
+                    font_prop = fm.FontProperties(fname=font_path)
+                    font_name = font_prop.get_name()
+                    
+                    # 设置matplotlib使用这个字体 / Set matplotlib to use this font
+                    matplotlib.rcParams['font.sans-serif'] = [font_name]
+                    matplotlib.rcParams['axes.unicode_minus'] = False
+                    
+                    print(f"✅ Using font: {font_name}")
+                except Exception as e:
+                    print(f"⚠️ Font setup failed: {e}")
+                    # 设置回退方案 / Setup fallback
+                    matplotlib.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial Unicode MS', 'SimHei', 'Microsoft YaHei']
+                    matplotlib.rcParams['axes.unicode_minus'] = False
+            else:
+                # 回退方案：设置常见的中文字体名称 / Fallback: set common Chinese font names
+                if is_windows():
+                    matplotlib.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial']
+                elif platform.system() == 'Darwin':  # macOS
+                    matplotlib.rcParams['font.sans-serif'] = ['PingFang TC', 'Heiti SC', 'Arial Unicode MS']
+                else:  # Linux
+                    matplotlib.rcParams['font.sans-serif'] = ['WenQuanYi Micro Hei', 'DejaVu Sans', 'Arial']
+                matplotlib.rcParams['axes.unicode_minus'] = False
+            
+            print(f"  Data length: {min_length} samples")
+            
+            # 图表尺寸计算（保持不变） / Chart size calculation (unchanged)
+            multiplier = 1
+            width_px = 576 * multiplier
+            height_px = int(width_px * 180 / 80)
+            dpi = 203
+            fig_width = width_px / dpi
+            fig_height = height_px / dpi
+            
+            fig = plt.figure(figsize=(fig_height, fig_width), dpi=dpi)
 
-          font_m = 8 * multiplier
-          font_l = 10 * multiplier
-          
-          bean_info_enabled = BEAN_INFO_ENABLED
-          
-          if bean_info_enabled:
-              gs = plt.GridSpec(1, 3, width_ratios=[0.65, 0.12, 0.23], wspace=0.2)
-          else:
-              gs = plt.GridSpec(1, 2, width_ratios=[0.65, 0.35])
+            font_m = 8 * multiplier
+            font_l = 10 * multiplier
+            
+            # ============ 智能判断是否显示豆子信息 ============
+            # Intelligent decision whether to display bean info
+            has_bean_info = False
+            bean_data = {}
+            
+            try:
+                bean_data = data.get('meta', {}).get('bean', {})
+                # 检查是否有有效的豆子信息（至少包含brand、type或notes字段）
+                # Check if valid bean info exists (at least contains brand, type or notes field)
+                if (bean_data and 
+                    (bean_data.get('brand') or bean_data.get('type') or bean_data.get('notes'))):
+                    has_bean_info = True
+                    print(f"✅ Found bean info in JSON: {bean_data.get('brand', 'Unknown')}")
+            except Exception as e:
+                print(f"⚠️ Error checking bean info: {e}")
+                has_bean_info = False
+            
+            # 只有当全局设置启用且有豆子信息时才显示豆子信息
+            # Only display bean info when global setting is enabled AND bean info exists
+            bean_info_enabled = BEAN_INFO_ENABLED and has_bean_info
+            
+            # 记录日志以便调试 / Log for debugging
+            if BEAN_INFO_ENABLED and not has_bean_info:
+                print(f"⚠️ Bean info setting is enabled but no bean data found in JSON")
+            elif has_bean_info and not BEAN_INFO_ENABLED:
+                print(f"ℹ️ Bean data exists but global setting is disabled")
+            elif bean_info_enabled:
+                print(f"✅ Will display bean info from JSON")
+            
+            # ============ 创建图表布局 ============
+            # Create chart layout
+            # 总是创建三列网格（即使不显示豆子信息，也保留空间）
+            # Always create three-column grid (reserve space even if not displaying bean info)
+            gs = plt.GridSpec(1, 3, width_ratios=[0.65, 0.12, 0.23], wspace=0.2)
+            
+            ax_left = fig.add_subplot(gs[0])
+            ax_right = ax_left.twinx()
+            ax_temp = ax_left.twinx()
+            
+            # 添加机器ID标签（如果存在）/ Add machine ID label (if exists)
+            if machine_id != 'UNKNOWN':
+                machine_label = get_text('chart_machine_id_label')
+                fig.text(0.03, 0.0, f"{machine_label}: {machine_id}",
+                        fontsize=font_m * 0.8,
+                        verticalalignment='bottom',
+                        horizontalalignment='left',
+                        bbox=dict(boxstyle='round,pad=0.2', 
+                                  facecolor='white', 
+                                  alpha=0.7,
+                                  edgecolor='black',
+                                  linewidth=0.5))
+            
+            ax_text1 = fig.add_subplot(gs[1])  # 第一列文本（冲煮信息）/ First column text (brew info)
+            ax_text1.axis('off')
+            
+            # 总是创建第二列区域（豆子信息或方案信息）
+            # Always create second column area (bean info or profile info)
+            ax_text2 = fig.add_subplot(gs[2])
+            ax_text2.axis('off')
+            
+            # 设置温度轴位置 / Set temperature axis position
+            ax_temp.spines['left'].set_position(('axes', -0.10))
+            ax_temp.yaxis.set_ticks_position('left')
+            ax_temp.yaxis.set_label_position('left')
+            
+            # 绘图线条设置 / Plot line settings
+            line_width = 1.25 * multiplier
+            
+            # 绘制曲线 / Draw curves
+            ax_left.plot(elapsed, pressure, linestyle='-', linewidth=line_width, 
+                        label=chart_texts['pressure'], color='black')
+            ax_right.plot(elapsed, flow, linestyle='--', linewidth=line_width, 
+                          label=chart_texts['water_flow'], color='black')
+            ax_right.plot(elapsed, flow_by_weight, linestyle=':', linewidth=line_width, 
+                          label=chart_texts['coffee_flow'], color='black')
+            ax_temp.plot(elapsed, basket_temp, 
+                        linestyle='-.', linewidth=line_width, 
+                        label=chart_texts['basket_temp'], color='black')
+            
+            # 设置坐标轴范围和标签 / Set axis ranges and labels
+            ax_left.set_ylim(0, 10)  # 压力固定在0-10 / Pressure fixed 0-10
+            ax_left.set_ylabel(chart_texts['pressure_label'], fontsize=font_m)
+            ax_left.yaxis.set_label_coords(-0.05, 0.5)
 
-          ax_left = fig.add_subplot(gs[0])
-          ax_right = ax_left.twinx()
-          ax_temp = ax_left.twinx()
-          if machine_id != 'UNKNOWN':
-              machine_label = get_text('chart_machine_id_label')
-              fig.text(0.03, 0.0, f"{machine_label}: {machine_id}",
-                      fontsize=font_m * 0.8,
-                      verticalalignment='bottom',
-                      horizontalalignment='left',
-                      bbox=dict(boxstyle='round,pad=0.2', 
-                                facecolor='white', 
-                                alpha=0.7,
-                                edgecolor='black',
-                                linewidth=0.5))
-          
-          ax_text1 = fig.add_subplot(gs[1])  # 第一列文本（原有信息）
-          ax_text1.axis('off')
-          if bean_info_enabled:
-              ax_text2 = fig.add_subplot(gs[2])  # 第二列文本（咖啡豆信息）
-              ax_text2.axis('off')
-          
-          ax_temp.spines['left'].set_position(('axes', -0.10))
-          ax_temp.yaxis.set_ticks_position('left')
-          ax_temp.yaxis.set_label_position('left')
-          
-          # plt.style.use('grayscale')
-          
-          line_width = 1.25 * multiplier
-          
-          ax_left.plot(elapsed, pressure, linestyle='-', linewidth=line_width, 
-                      label=chart_texts['pressure'], color='black')
-          ax_right.plot(elapsed, flow, linestyle='--', linewidth=line_width, 
-                        label=chart_texts['water_flow'], color='black')
-          ax_right.plot(elapsed, flow_by_weight, linestyle=':', linewidth=line_width, 
-                        label=chart_texts['coffee_flow'], color='black')
-          ax_temp.plot(elapsed, basket_temp, 
-                      linestyle='-.', linewidth=line_width, 
-                      label=chart_texts['basket_temp'], color='black')
-          
-          ax_left.set_ylim(0, 10)  # 压力固定在0-10 / Pressure fixed 0-10
-          ax_left.set_ylabel(chart_texts['pressure_label'], fontsize=font_m)
-          ax_left.yaxis.set_label_coords(-0.05, 0.5)
+            ax_right.set_ylim(0, 10)  # 流速固定在0-10 / Flow rate fixed 0-10
+            ax_right.set_ylabel(chart_texts['flow_label'], fontsize=font_m)
+            ax_right.yaxis.set_label_coords(1.06, 0.5)
 
-          ax_right.set_ylim(0, 10)  # 流速固定在0-10 / Flow rate fixed 0-10
-          ax_right.set_ylabel(chart_texts['flow_label'], fontsize=font_m)
-          ax_right.yaxis.set_label_coords(1.06, 0.5)
+            ax_temp.set_ylim(0, 100)  # 温度固定在0-100度 / Temperature fixed 0-100
+            ax_temp.set_ylabel(chart_texts['temp_label'], fontsize=font_m)
+            ax_temp.yaxis.set_label_coords(-0.18, 0.5)
 
-          ax_temp.set_ylim(0, 100)  # 温度固定在0-100度 / Temperature fixed 0-100
-          ax_temp.set_ylabel(chart_texts['temp_label'], fontsize=font_m)
-          ax_temp.yaxis.set_label_coords(-0.18, 0.5)
+            # 添加图例 / Add legend
+            legend_fontsize = font_m * 0.8
+            lines_left, labels_left = ax_left.get_legend_handles_labels()
+            lines_right, labels_right = ax_right.get_legend_handles_labels()
+            lines_temp, labels_temp = ax_temp.get_legend_handles_labels()
+            
+            all_lines = lines_left + lines_right + lines_temp
+            all_labels = labels_left + labels_right + labels_temp
+            
+            ax_left.legend(all_lines, all_labels, 
+              fontsize=legend_fontsize, loc='lower center', frameon=True, 
+              fancybox=False, framealpha=0.0,
+              ncol=4,
+              bbox_to_anchor=(0.5, -0.18))
+            
+            # 添加网格 / Add grid
+            ax_left.grid(True, linestyle='--', alpha=0.6, linewidth=line_width / 2, color='black')
+            
+            # 设置刻度标签大小 / Set tick label size
+            ax_left.tick_params(axis='both', which='major', labelsize=font_m)
+            ax_right.tick_params(axis='y', which='major', labelsize=font_m)
+            ax_temp.tick_params(axis='y', which='major', labelsize=font_m)
+            
+            # 设置边框线宽 / Set border line width
+            for spine in ax_left.spines.values():
+                spine.set_linewidth(line_width)
+            for spine in ax_right.spines.values():
+                spine.set_linewidth(line_width)
+            for spine in ax_temp.spines.values():
+                spine.set_linewidth(line_width)
+            def smart_wrap_text(text, column_num=1):
+                """
+                Simplified text wrapping based on character count - 基于字符数的简化换行
+                This is more reliable across different systems and fonts
+                这在不同系统和字体下更可靠
+                """
+                if not text:
+                    return []
+                
+                # ============ 配置参数 ============
+                # Configure parameters / 配置参数
+                # 针对小票打印机的优化值（576像素宽度）
+                # Optimized values for receipt printer (576px width)
+                if column_num == 2:  # 第二列（咖啡豆信息）
+                    # Second column (bean info) - narrower
+                    MAX_CHARS_PER_LINE_CHINESE = 12  # 中文字符每行限制
+                    MAX_CHARS_PER_LINE_ENGLISH = 25  # 英文字符每行限制
+                else:  # 第一列（冲煮信息）
+                    # First column (brew info) - wider
+                    MAX_CHARS_PER_LINE_CHINESE = 7  # 中文字符每行限制
+                    MAX_CHARS_PER_LINE_ENGLISH = 15  # 英文字符每行限制
+                
+                MAX_LINES = 12  # 最大行数限制
+                
+                # ============ 检测文本类型 ============
+                # Detect text type / 检测文本类型
+                def detect_text_type(text):
+                    """Detect if text is mostly Chinese or English / 检测文本主要是中文还是英文"""
+                    if not text:
+                        return 'unknown'
+                    
+                    # 统计中文字符 / Count Chinese characters
+                    chinese_count = sum(1 for c in text if '\u4e00' <= c <= '\u9fff')
+                    total_chars = len(text)
+                    
+                    if total_chars == 0:
+                        return 'unknown'
+                    
+                    # 如果超过30%是中文字符，认为是中文文本 / If over 30% are Chinese, consider it Chinese text
+                    if chinese_count / total_chars > 0.3:
+                        return 'chinese'
+                    else:
+                        return 'english'
+                
+                text_type = detect_text_type(text)
+                
+                # ============ 使用textwrap进行智能换行 ============
+                # Use textwrap for smart line breaking / 使用textwrap进行智能换行
+                try:
+                    import textwrap
+                    
+                    # 根据文本类型选择每行最大字符数 / Select max chars per line based on text type
+                    if text_type == 'chinese':
+                        width = MAX_CHARS_PER_LINE_CHINESE
+                        # 中文处理：按字符换行 / Chinese processing: break by character
+                        lines = []
+                        current_line = ''
+                        
+                        for char in text:
+                            # 中文标点处理 / Chinese punctuation handling
+                            if char in '，。、；！？「」『』（）【】《》':
+                                # 标点不占行长度限制 / Punctuation doesn't count toward line length
+                                current_line += char
+                            elif len(current_line) >= width:
+                                lines.append(current_line)
+                                current_line = char
+                            else:
+                                current_line += char
+                        
+                        if current_line:
+                            lines.append(current_line)
+                            
+                    else:  # 英文或混合文本 / English or mixed text
+                        width = MAX_CHARS_PER_LINE_ENGLISH
+                        
+                        # 使用textwrap的智能换行（保留单词完整性）/ Use textwrap's smart wrapping (preserves word integrity)
+                        lines = textwrap.wrap(
+                            text,
+                            width=width,
+                            break_long_words=False,  # 不分割长单词 / Don't break long words
+                            break_on_hyphens=True,   # 在连字符处可以分割 / Can break at hyphens
+                            drop_whitespace=True,
+                            replace_whitespace=True
+                        )
+                        
+                        # 处理textwrap可能无法处理的极长单词 / Handle extremely long words that textwrap can't handle
+                        final_lines = []
+                        for line in lines:
+                            if len(line) > width * 1.5:  # 如果行仍然太长 / If line is still too long
+                                # 在合理位置分割 / Split at reasonable positions
+                                # 尝试在空格、连字符、逗号后分割 / Try to split after spaces, hyphens, commas
+                                split_points = [' ', '-', ',', ';', '.']
+                                for split_char in split_points:
+                                    if split_char in line:
+                                        parts = line.split(split_char)
+                                        if len(parts) > 1:
+                                            # 重建行，确保每部分不超过宽度 / Rebuild lines ensuring each part doesn't exceed width
+                                            for i, part in enumerate(parts):
+                                                if i > 0:
+                                                    part = split_char + part
+                                                if len(part) > width:
+                                                    # 实在不行就按字符分割 / As last resort, split by character
+                                                    for j in range(0, len(part), width):
+                                                        final_lines.append(part[j:j+width])
+                                                else:
+                                                    final_lines.append(part)
+                                            break
+                                else:
+                                    # 没有分割点，按字符分割 / No split points, split by character
+                                    for j in range(0, len(line), width):
+                                        final_lines.append(line[j:j+width])
+                            else:
+                                final_lines.append(line)
+                        
+                        lines = final_lines
+                    
+                    # ============ 限制最大行数 ============
+                    # Limit maximum lines / 限制最大行数
+                    if len(lines) > MAX_LINES:
+                        lines = lines[:MAX_LINES]
+                        lines.append("...")
+                    
+                    return lines
+                    
+                except ImportError:
+                    # 备用方案：简单的字符计数换行 / Fallback: simple character count wrapping
+                    print("⚠️ textwrap not available, using simple wrapping")
+                    
+                    width = MAX_CHARS_PER_LINE_ENGLISH if text_type == 'english' else MAX_CHARS_PER_LINE_CHINESE
+                    lines = []
+                    
+                    # 简单的换行逻辑 / Simple wrapping logic
+                    words = text.split()
+                    current_line = ''
+                    
+                    for word in words:
+                        if len(current_line) + len(word) + 1 <= width:
+                            if current_line:
+                                current_line += ' ' + word
+                            else:
+                                current_line = word
+                        else:
+                            if current_line:
+                                lines.append(current_line)
+                            # 检查单词本身是否太长 / Check if word itself is too long
+                            if len(word) > width:
+                                # 分割长单词 / Split long word
+                                for i in range(0, len(word), width):
+                                    lines.append(word[i:i+width])
+                                current_line = ''
+                            else:
+                                current_line = word
+                    
+                    if current_line:
+                        lines.append(current_line)
+                    
+                    # 限制行数 / Limit lines
+                    if len(lines) > MAX_LINES:
+                        lines = lines[:MAX_LINES]
+                        lines.append("...")
+                    
+                    return lines
+            # ============ 第一列文本处理（冲煮方案等） ============
+            # First column text processing (brew profile etc.)
+            # 获取冲煮方案名称 / Get profile name
+            profile_title = data['profile'].get('title', 'Unknown Profile')
+            # 使用智能换行 / Use smart wrapping
+            profile_lines = smart_wrap_text(profile_title, column_num=1)
+            
+            # 获取冲泡参数 / Get brew parameters
+            in_weight = data['meta'].get('in', 'N/A')
+            out_weight = data['meta'].get('out', 'N/A')
+            shot_time = data['meta'].get('time', 'N/A')
+            grinder_setting = data['meta'].get('grinder', {}).get('setting', 'N/A')
+            
+            # 日期时间处理 / Date time processing
+            date_str = data.get('date', '')
+            timestamp = data.get('timestamp', '')
+            
+            if timestamp:
+                try:
+                    date_obj = datetime.fromtimestamp(float(timestamp))
+                    formatted_date = date_obj.strftime('%Y-%m-%d')
+                    formatted_time = date_obj.strftime('%H:%M:%S')
+                except:
+                    formatted_date = 'N/A'
+                    formatted_time = 'N/A'
+            elif date_str:
+                try:
+                    date_obj = datetime.strptime(date_str, '%a %b %d %H:%M:%S %Y')
+                    formatted_date = date_obj.strftime('%Y-%m-%d')
+                    formatted_time = date_obj.strftime('%H:%M:%S')
+                except:
+                    formatted_date = 'N/A'
+                    formatted_time = 'N/A'
+            else:
+                formatted_date = 'N/A'
+                formatted_time = 'N/A'
+            
+            initial_basket_temp = basket_temp[0]
+            
+            # 构建第一列文本内容 / Build first column text content
+            text_content1 = []
+            text_content1.append(chart_texts['date_time_title'])
+            text_content1.append("──────")
+            text_content1.append(formatted_date)
+            text_content1.append(formatted_time)
+            text_content1.append("")
+            text_content1.append(chart_texts['profile_title'])
+            text_content1.append("──────")
+            
+            # 添加冲煮方案（可能有多行）/ Add profile (may have multiple lines)
+            if profile_lines:
+                for line in profile_lines:
+                    text_content1.append(line)
+            else:
+                text_content1.append(profile_title[:12])
+            text_content1.append("")
+            
+            text_content1.append(chart_texts['extraction_title'])
+            text_content1.append("──────")
+            text_content1.append(f"{chart_texts['in_weight_label']}: {in_weight}g")
+            text_content1.append(f"{chart_texts['out_weight_label']}: {out_weight}g")
+            text_content1.append(f"{chart_texts['shot_time_label']}: {shot_time}s")
+            text_content1.append("")
+            
+            text_content1.append(chart_texts['grinder_temp_title'])
+            text_content1.append("──────")
+            text_content1.append(f"{chart_texts['grind_label']}: {grinder_setting}")
+            text_content1.append(f"{chart_texts['initial_temp_label']}: {initial_basket_temp:.1f}°C")
+            
+            # 绘制第一列文本 / Draw first column text
+            y_position = 0.98
+            line_height = 0.05  # 行间距 / Line spacing
+            
+            for i, text in enumerate(text_content1):
+                if text in [chart_texts['date_time_title'], chart_texts['profile_title'], 
+                          chart_texts['extraction_title'], chart_texts['grinder_temp_title']]:
+                    fontsize = font_l
+                    weight = 'bold'
+                elif text == "──────":
+                    fontsize = font_m
+                    weight = 'normal'
+                    y_position -= line_height * 0.5  # 分隔线后的间距小一些 / Smaller spacing after separator
+                elif text == "":
+                    y_position -= line_height * 0.3  # 空行间距 / Empty line spacing
+                else:
+                    fontsize = font_m
+                    weight = 'normal'
+                
+                ax_text1.text(0.05, y_position, text, 
+                            fontsize=fontsize, ha='left', va='top',
+                            transform=ax_text1.transAxes,
+                            weight=weight)
+                y_position -= line_height
+            
+            # ============ 第二列文本处理（智能选择豆子信息或方案信息） ============
+            # Second column text processing (intelligent choice between bean info or profile info)
+            text_content2 = []
 
-          legend_fontsize = font_m * 0.8
-          lines_left, labels_left = ax_left.get_legend_handles_labels()
-          lines_right, labels_right = ax_right.get_legend_handles_labels()
-          lines_temp, labels_temp = ax_temp.get_legend_handles_labels()
-          
-          all_lines = lines_left + lines_right + lines_temp
-          all_labels = labels_left + labels_right + labels_temp
-          
-          ax_left.legend(all_lines, all_labels, 
-            fontsize=legend_fontsize, loc='lower center', frameon=True, 
-            fancybox=False, framealpha=0.0,
-            ncol=4,
-            bbox_to_anchor=(0.5, -0.18))
-          
-          ax_left.grid(True, linestyle='--', alpha=0.6, linewidth=line_width / 2, color='black')
-          
-          ax_left.tick_params(axis='both', which='major', labelsize=font_m)
-          ax_right.tick_params(axis='y', which='major', labelsize=font_m)
-          ax_temp.tick_params(axis='y', which='major', labelsize=font_m)
-          
-          for spine in ax_left.spines.values():
-              spine.set_linewidth(line_width)
-          for spine in ax_right.spines.values():
-              spine.set_linewidth(line_width)
-          for spine in ax_temp.spines.values():
-              spine.set_linewidth(line_width)
-          
-          # ============ 新增：第一列文本处理（冲煮方案等） ============
-          def smart_wrap_text(text, ax, max_width_ratio=0.9, base_fontsize=8, is_bold=False):
-              """根据实际渲染宽度智能换行 - 中文标点优化版"""
-              if not text:
-                  return []
-              
-              lines = []
-              fontweight = 'bold' if is_bold else 'normal'
-              
-              # 1. 获取实际可用的像素宽度
-              fig = ax.figure
-              
-              # 确保有渲染器来测量文本
-              if not fig.canvas or not fig.canvas.get_renderer():
-                  import matplotlib.backends.backend_agg as backend_agg
-                  fig.canvas = backend_agg.FigureCanvasAgg(fig)
-              
-              renderer = fig.canvas.get_renderer()
-              
-              # 获取轴的边界框（像素坐标）
-              bbox = ax.get_window_extent(renderer)
-              
-              # 计算可用宽度
-              actual_available_ratio = max_width_ratio * 0.95
-              available_width_pixels = bbox.width * actual_available_ratio
-              
-              # ============ 关键改进：预处理文本，中文标点替换为空格 ============
-              import re
-              
-              # 检测文本是否主要是中文
-              def is_mostly_chinese(text):
-                  if not text:
-                      return False
-                  chinese_chars = sum(1 for c in text if '\u4e00' <= c <= '\u9fff')
-                  return chinese_chars / len(text) > 0.3
-              
-              # 预处理文本
-              processed_text = text
-              
-              if is_mostly_chinese(text):
-                  # 中文标点替换为空格（便于分割）
-                  chinese_punct_to_space = '，。、；！？「」『』（）【】《》～·'
-                  for punct in chinese_punct_to_space:
-                      processed_text = processed_text.replace(punct, ' ')
-              
-              # 英文标点也处理（部分保留）
-              english_punct_to_space = ',;'
-              for punct in english_punct_to_space:
-                  processed_text = processed_text.replace(punct, ' ')
-              
-              # 合并多个连续空格为单个空格
-              processed_text = re.sub(r'\s+', ' ', processed_text)
-              
-              # 按空格分割成"词"（对中文来说，每个字或词被空格分隔）
-              words = processed_text.split()
-              
-              # 如果没有分割出单词（可能是纯标点或无空格文本），按字符处理
-              if not words:
-                  words = list(text)
-              
-              # 2. 使用改进的换行算法
-              current_line = ""
-              
-              for word in words:
-                  # 测试添加这个词后的宽度
-                  if current_line:
-                      test_line = current_line + " " + word
-                  else:
-                      test_line = word
-                  
-                  # 创建文本对象测量宽度
-                  try:
-                      temp_text = ax.text(0, 0, test_line, 
-                                        fontsize=base_fontsize, 
-                                        fontweight=fontweight,
-                                        transform=ax.transAxes)
-                      text_bbox = temp_text.get_window_extent(renderer)
-                      temp_text.remove()
-                      
-                      text_width = text_bbox.width
-                  except:
-                      # 测量失败，使用保守估计
-                      text_width = len(test_line) * base_fontsize * 0.6
-                  
-                  # 检查是否超过可用宽度
-                  if text_width > available_width_pixels:
-                      # 超宽，保存当前行
-                      if current_line:
-                          lines.append(current_line.strip())
-                      
-                      # 开始新行
-                      # 检查单个词是否也超宽
-                      single_word_test = ax.text(0, 0, word, 
-                                              fontsize=base_fontsize, 
-                                              fontweight=fontweight,
-                                              transform=ax.transAxes)
-                      single_word_bbox = single_word_test.get_window_extent(renderer)
-                      single_word_test.remove()
-                      
-                      if single_word_bbox.width > available_width_pixels:
-                          # 单个词就超宽，需要分割
-                          chars_per_line = max(1, int(available_width_pixels / (base_fontsize * 0.7)))
-                          for i in range(0, len(word), chars_per_line):
-                              segment = word[i:i+chars_per_line]
-                              if i > 0:
-                                  lines.append(current_line.strip() if current_line else segment)
-                              current_line = segment
-                      else:
-                          current_line = word
-                  else:
-                      # 可以添加这个词
-                      current_line = test_line
-                  
-                  # ============ 新增：强制检查行长度（字符数备用检查） ============
-                  if len(current_line) > 30:  # 字符数过多，即使宽度没超也换行
-                      lines.append(current_line.strip())
-                      current_line = ""
-              
-              # 添加最后一行
-              if current_line.strip():
-                  lines.append(current_line.strip())
-              
-              # ============ 后处理：清理和限制行数 ============
-              final_lines = []
-              for line in lines:
-                  line = line.strip()
-                  if not line:
-                      continue
-                  
-                  # 如果某行还是太长，强制按字符数分割
-                  if len(line) > 25:  # 第二列应该更短
-                      chars_per_line = 12  # 咖啡豆信息列更保守
-                      for i in range(0, len(line), chars_per_line):
-                          segment = line[i:i+chars_per_line]
-                          if segment:
-                              final_lines.append(segment)
-                  else:
-                      final_lines.append(line)
-              
-              # 限制最大行数
-              max_lines = 15  # 咖啡豆信息列行数限制
-              if len(final_lines) > max_lines:
-                  final_lines = final_lines[:max_lines]
-                  final_lines.append("...")
-              
-              return final_lines
-          
-          # 获取冲煮方案名称
-          profile_title = data['profile'].get('title', 'Unknown Profile')
-          # 使用智能换行（第一列使用ax_text1）
-          profile_lines = smart_wrap_text(profile_title, ax_text1, max_width_ratio=1.0, 
-                                       base_fontsize=6, is_bold=False)
-          
-          in_weight = data['meta'].get('in', 'N/A')
-          out_weight = data['meta'].get('out', 'N/A')
-          shot_time = data['meta'].get('time', 'N/A')
-          grinder_setting = data['meta'].get('grinder', {}).get('setting', 'N/A')
-          
-          date_str = data.get('date', '')
-          timestamp = data.get('timestamp', '')
-          
-          if timestamp:
-              try:
-                  date_obj = datetime.fromtimestamp(float(timestamp))
-                  formatted_date = date_obj.strftime('%Y-%m-%d')
-                  formatted_time = date_obj.strftime('%H:%M:%S')
-              except:
-                  formatted_date = 'N/A'
-                  formatted_time = 'N/A'
-          elif date_str:
-              try:
-                  date_obj = datetime.strptime(date_str, '%a %b %d %H:%M:%S %Y')
-                  formatted_date = date_obj.strftime('%Y-%m-%d')
-                  formatted_time = date_obj.strftime('%H:%M:%S')
-              except:
-                  formatted_date = 'N/A'
-                  formatted_time = 'N/A'
-          else:
-              formatted_date = 'N/A'
-              formatted_time = 'N/A'
-          
-          initial_basket_temp = basket_temp[0]
-          
-          # 构建第一列文本内容（带换行）
-          text_content1 = []
-          text_content1.append(chart_texts['date_time_title'])
-          text_content1.append("──────")
-          text_content1.append(formatted_date)
-          text_content1.append(formatted_time)
-          text_content1.append("")
-          text_content1.append(chart_texts['profile_title'])
-          text_content1.append("──────")
-          
-          # 添加冲煮方案（可能有多行）
-          if profile_lines:
-              for line in profile_lines:
-                  text_content1.append(line)
-          else:
-              text_content1.append(profile_title[:12])
-          text_content1.append("")
-          
-          text_content1.append(chart_texts['extraction_title'])
-          text_content1.append("──────")
-          text_content1.append(f"{chart_texts['in_weight_label']}: {in_weight}g")
-          text_content1.append(f"{chart_texts['out_weight_label']}: {out_weight}g")
-          text_content1.append(f"{chart_texts['shot_time_label']}: {shot_time}s")
-          text_content1.append("")
-          
-          text_content1.append(chart_texts['grinder_temp_title'])
-          text_content1.append("──────")
-          text_content1.append(f"{chart_texts['grind_label']}: {grinder_setting}")
-          text_content1.append(f"{chart_texts['initial_temp_label']}: {initial_basket_temp:.1f}°C")
-          
-          # 绘制第一列文本
-          y_position = 0.98
-          line_height = 0.05  # 行间距
-          
-          for i, text in enumerate(text_content1):
-              if text in [chart_texts['date_time_title'], chart_texts['profile_title'], 
-                        chart_texts['extraction_title'], chart_texts['grinder_temp_title']]:
-                  fontsize = font_l
-                  weight = 'bold'
-              elif text == "──────":
-                  fontsize = font_m
-                  weight = 'normal'
-                  y_position -= line_height * 0.5  # 分隔线后的间距小一些
-                  #continue
-              elif text == "":
-                  y_position -= line_height * 0.3  # 空行间距
-                  #continue
-              else:
-                  fontsize = font_m
-                  weight = 'normal'
-              
-              ax_text1.text(0.05, y_position, text, 
-                          fontsize=fontsize, ha='left', va='top',
-                          transform=ax_text1.transAxes,
-                          weight=weight)
-              y_position -= line_height
-          
-          # ============ 新增：第二列文本处理（咖啡豆信息和品尝笔记） ============
-          if bean_info_enabled:
-              # 第二列文本（咖啡豆信息）
-              notes = data['profile'].get('notes', '')
-              
-              # 构建第二列文本内容
-              text_content2 = []
-              
-              # 添加 Bean Info 标题
-              bean_info_title = chart_texts['bean_info']
-              text_content2.append(bean_info_title)
-              text_content2.append("──────")
-              
-              if notes:
-                  # 处理咖啡豆信息，按最大10个字符宽度换行（第二列更窄）
-                  notes_lines = smart_wrap_text(notes, ax_text2, max_width_ratio=0.6,  # 第二列更窄
-                                            base_fontsize=5, is_bold=False)
-                  
-                  # 添加到文本内容中（最多显示15行）
-                  for line in notes_lines:
-                      text_content2.append(line)
-              else:
-                  text_content2.append(chart_texts['na'])
-              
-              # 添加空行
-              text_content2.append("")
-              
-              # 添加 Tasting Note 标题
-              tasting_note_title = chart_texts['tasting_note']
-              text_content2.append(tasting_note_title)
-              text_content2.append("──────")
-              
-              # 这里可以添加品尝笔记内容，如果需要的话
-              # text_content2.append("品尝笔记内容...")
-              
-              # 绘制第二列文本
-              y_position2 = 0.98
-              
-              for i, text in enumerate(text_content2):
-                  if text in [chart_texts['bean_info'], chart_texts['tasting_note']]:
-                      fontsize = font_l
-                      weight = 'bold'
-                  elif text == "──────":
-                      fontsize = font_m
-                      weight = 'normal'
-                      y_position2 -= line_height * 0.5
-                      #continue
-                  elif text == "":
-                      y_position2 -= line_height * 0.3
-                      #continue
-                  else:
-                      fontsize = font_m
-                      weight = 'normal'
-                  
-                  ax_text2.text(0.01, y_position2, text,
-                              fontsize=fontsize, ha='left', va='top',
-                              transform=ax_text2.transAxes,
-                              weight=weight)
-                  y_position2 -= line_height
-          
-          plt.tight_layout(pad=0.5)
-          plt.savefig(output_file, dpi=dpi, bbox_inches='tight', 
-                      facecolor='white', edgecolor='none',
-                      pad_inches=0.1)
-          plt.close(fig)
-          
-          print(f"✅ Chart generated: {output_file}")
-          return True
-          
-      except Exception as e:
-          print(f"❌ Chart generation failed: {str(e)}")
-          return False
+            if has_bean_info:
+                # 有豆子信息：显示Bean Info / Has bean info: display Bean Info
+                title = chart_texts['bean_info']
+                print(f"📝 Displaying bean info: {bean_data.get('brand', 'Unknown')}")
+            else:
+                # 没有豆子信息：显示Profile Info / No bean info: display Profile Info
+                title = chart_texts['profile_info']
+                print(f"📝 No bean info found, displaying profile info")
 
+            text_content2.append(title)
+            text_content2.append("──────")
+
+            if has_bean_info:
+                # 构建豆子信息显示行 / Build bean info display lines
+                # 第一行：品牌和品种 / Line 1: Brand and type
+                brand = bean_data.get('brand', '')
+                bean_type = bean_data.get('type', '')
+                if brand and bean_type:
+                    line1 = f"{brand} - {bean_type}"
+                elif brand:
+                    line1 = brand
+                elif bean_type:
+                    line1 = bean_type
+                else:
+                    line1 = ""
+                
+                # 第二行：风味描述 / Line 2: Flavor notes
+                line2 = bean_data.get('notes', '')
+                
+                # 第三行：烘焙度和日期 / Line 3: Roast level and date
+                roast_info = []
+                if bean_data.get('roast_level'):
+                    roast_info.append(bean_data['roast_level'])
+                if bean_data.get('roast_date'):
+                    roast_date = bean_data['roast_date']
+                    # 格式化日期：YYYYMMDD -> YYYY-MM-DD / Format date: YYYYMMDD -> YYYY-MM-DD
+                    if len(roast_date) == 8 and roast_date.isdigit():
+                        formatted_date = f"{roast_date[:4]}-{roast_date[4:6]}-{roast_date[6:8]}"
+                        roast_info.append(formatted_date)
+                line3 = ' '.join(roast_info)
+                
+                # 处理每一行文本（使用智能换行）/ Process each line (using smart wrapping)
+                for line in [line1, line2, line3]:
+                    if line:  # 只处理非空行 / Only process non-empty lines
+                        wrapped_lines = smart_wrap_text(line, column_num=2)
+                        for wrapped_line in wrapped_lines:
+                            text_content2.append(wrapped_line)
+                        # text_content2.append("")  # 行间空行 / Empty line between lines
+                
+                # 检查是否有JSON提供的品尝笔记 / Check if there are tasting notes from JSON
+                shot_data = data.get('meta', {}).get('shot', {})
+                shot_notes = shot_data.get('notes', '')
+                
+                if shot_notes:
+                    # 如果有JSON提供的品尝笔记，也添加到豆子信息部分
+                    # If there are tasting notes from JSON, also add them to bean info section
+                    text_content2.append("Tasting Note (from JSON):")
+                    text_content2.append("──────")
+                    tasting_lines = smart_wrap_text(shot_notes, column_num=2,)
+                    for tasting_line in tasting_lines:
+                        text_content2.append(tasting_line)
+                    text_content2.append("")  # 空行分隔 / Empty line separator
+
+            else:
+                # 显示方案信息（profile notes）/ Display profile info (profile notes)
+                notes = data['profile'].get('notes', '')
+                
+                if notes:
+                    # 处理profile notes（使用智能换行）/ Process profile notes (using smart wrapping)
+                    notes_lines = smart_wrap_text(notes, column_num=2)
+                    
+                    for line in notes_lines:
+                        text_content2.append(line)
+                else:
+                    text_content2.append(chart_texts['na'])
+
+            # ============ 固定添加品尝笔记区域（供用户手写） ============
+            # Fixed add tasting note area (for user to write manually)
+            text_content2.append("")  # 空行分隔 / Empty line separator
+            text_content2.append(chart_texts['tasting_note'])
+            text_content2.append("──────")
+            # 留出空白行供用户填写 / Leave blank lines for user to fill in
+            text_content2.append("")  # 空白行1 / Blank line 1
+            text_content2.append("")  # 空白行2 / Blank line 2
+            text_content2.append("")  # 空白行3 / Blank line 3
+            text_content2.append("")  # 空白行4 / Blank line 4
+
+            # 绘制第二列文本 / Draw second column text
+            y_position2 = 0.98
+
+            for i, text in enumerate(text_content2):
+                if text in [chart_texts['bean_info'], chart_texts['profile_info'], 
+                          chart_texts['tasting_note'], "Tasting Note (from JSON):"]:
+                    fontsize = font_l
+                    weight = 'bold'
+                elif text == "──────":
+                    fontsize = font_m
+                    weight = 'normal'
+                    y_position2 -= line_height * 0.5
+                elif text == "":
+                    y_position2 -= line_height * 0.3
+                else:
+                    fontsize = font_m
+                    weight = 'normal'
+                
+                ax_text2.text(0.01, y_position2, text,
+                            fontsize=fontsize, ha='left', va='top',
+                            transform=ax_text2.transAxes,
+                            weight=weight)
+                y_position2 -= line_height
+            
+            # 保存图表 / Save chart
+            plt.tight_layout(pad=0.5)
+            plt.savefig(output_file, dpi=dpi, bbox_inches='tight', 
+                        facecolor='white', edgecolor='none',
+                        pad_inches=0.1)
+            plt.close(fig)
+            
+            print(f"✅ Chart generated: {output_file}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Chart generation failed: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return False
+          
     def generate_print_image(self, png_path):
         """为打印生成专门的BMP文件 / Generate specialized BMP file for printing"""
         try:
