@@ -105,7 +105,7 @@ a = Analysis(
     excludes=[
         'tkinter',  # 如果不使用 GUI
         'test',
-        'unittest',
+        # 'unittest',
         'pydoc',
         'pdb',
     ],
