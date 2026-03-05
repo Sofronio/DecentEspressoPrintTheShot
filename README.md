@@ -150,9 +150,12 @@ sudo apt install -y lynx
 ~~~
 
 #### Python Dependencies
-
 ~~~
-# Create virtual environment (recommended)
+# Install Python packages(For pi)
+sudo apt install python3-matplotlib python3-pil python3-numpy python3-flask
+~~~
+~~~
+# Or Create virtual environment (not in use now)
 python3 -m venv printtheshot-env
 source printtheshot-env/bin/activate
 
